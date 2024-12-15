@@ -6,16 +6,12 @@
     </p>
     <div class="mt-6">
       <a
-        href="mailto:your-email@example.com"
-        class="block text-blue-600 hover:underline">your-email@example.com</a
-      >
-      <a
-        href="https://linkedin.com/in/your-profile"
+        href="https://www.linkedin.com/in/ricardojosemartineslopes/"
         target="_blank"
         class="block mt-2 text-blue-600 hover:underline">LinkedIn</a
       >
       <a
-        href="https://github.com/your-username"
+        href="https://github.com/pxzin"
         target="_blank"
         class="block mt-2 text-blue-600 hover:underline">GitHub</a
       >
