@@ -1,8 +1,6 @@
 <script>
   const bio = `
-    I'm Ricardo José, a software engineer passionate about solving complex problems with simple and efficient solutions.
-    I have experience in frontend and backend development using modern frameworks like Svelte, TypeScript, and React.
-    I'm always seeking new challenges and continuously learning.
+    I'm just reflecting about my self and as soon as I have something to say, I'll update this page. :)
   `;
 </script>
 
