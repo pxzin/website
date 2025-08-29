@@ -6,3 +6,7 @@
 
 <Nav />
 <slot />
+
+<footer>
+  <p>Version: 0.0.0</p>
+</footer>
