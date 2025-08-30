@@ -3,8 +3,7 @@
   import "../app.css";
   import Nav from "$lib/components/Nav/Nav.svelte";
 
-  export let data;
-  const appVersion = data.appVersion;
+  const appVersion = import.meta.env.VITE_APP_VERSION;
 </script>
 
 <Nav />
