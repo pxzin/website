@@ -7,3 +7,4 @@ This file lists all planned and implemented tasks.
 - [x] Fix Version Display on Vercel Production: `TODO/fix_version_display_on_vercel.md`
 - [x] Improve Website UI/UX: `TODO/improve_website_ui.md`
 - [x] Improve Subpage UI/UX: `TODO/improve_subpage_ui.md`
+- [x] Fix Navigation Bar Overlap and Spacing: `TODO/fix_nav_overlap_and_spacing.md`

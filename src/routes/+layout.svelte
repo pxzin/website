@@ -7,7 +7,9 @@
 </script>
 
 <Nav />
-<slot />
+<div class="pt-16">
+  <slot />
+</div>
 
 <footer class="bg-gray-800 text-white p-4 text-center mt-8">
   <p class="text-sm">
