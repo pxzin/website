@@ -1,6 +1,31 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
 :root {
-  background-color: #f3f4f6; /* This is gray-100 in Tailwind CSS */
+  /* Neutral Colors */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+
+  /* Primary Colors */
+  --color-primary-default: #1a202c;
+  --color-primary-accent: #3b82f6;
+
+  /* Secondary Colors */
+  --color-secondary-default: #e2e8f0;
+
+  background-color: var(--color-neutral-50);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
 }

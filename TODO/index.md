@@ -5,3 +5,4 @@ This file lists all planned and implemented tasks.
 - [x] Update Project Packages: `TODO/update_packages.md`
 - [x] Implement Application Versioning and Changelog: `TODO/implement_versioning_and_changelog.md`
 - [x] Fix Version Display on Vercel Production: `TODO/fix_version_display_on_vercel.md`
+- [x] Improve Website UI/UX: `TODO/improve_website_ui.md`

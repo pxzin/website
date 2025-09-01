@@ -27,3 +27,11 @@ To maintain a clean and organized Git history, the following branching strategy 
 
 - The Gemini agent will always present a plan for approval before proceeding with implementation.
 - The Gemini agent will inform the user about the creation of new branches and the completion of merges.
+
+## 4. Project-Specific Development Principles
+
+For this project, the following principles are paramount for all UI/UX and frontend development tasks:
+
+-   **Continuous Improvement of UI/UX:** Always strive to enhance the user interface and experience, reflecting modern design trends and best practices.
+-   **Accessibility (A11y) First:** Ensure all UI elements are designed and implemented with accessibility in mind, adhering to WCAG guidelines. This includes semantic HTML, keyboard navigation, ARIA attributes, and sufficient color contrast.
+-   **Component Reusability & Design System Thinking:** Prioritize the creation of reusable, atomic UI components. Design components with clear APIs to facilitate their integration into a nascent "design system" for the project, promoting consistency and maintainability.
