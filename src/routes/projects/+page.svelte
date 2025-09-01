@@ -1,16 +1,5 @@
 <script lang="ts">
-  const projects = [
-    {
-      name: "Clock-in Helper",
-      description: "Chrome extension to streamline hour logging on Beefor.",
-      link: "https://github.com/your-username/clock-in-helper",
-    },
-    {
-      name: "Personal Website",
-      description: "Minimalist website built with SvelteKit and TailwindCSS.",
-      link: "https://ricardojose.com.br",
-    },
-  ];
+  import { projects } from "$lib/data/projects";
 </script>
 
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">

@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { projects } from "$lib/data/projects";
+
   const name = "Ricardo José";
   const title = "Software Engineer - Frontend specialist";
+
+  const featuredProjects = projects.filter(p => p.featured);
 </script>
 
 <section class="flex items-center justify-center min-h-screen py-16 bg-[var(--color-neutral-50)] text-center">
@@ -72,26 +76,13 @@
   <div class="max-w-4xl mx-auto px-4">
     <h2 class="text-4xl font-bold text-[var(--color-primary-default)] mb-8 text-center">Featured Projects</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Project Card 1 -->
-      <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-        <h3 class="text-2xl font-semibold text-[var(--color-primary-default)] mb-2">Project Alpha</h3>
-        <p class="text-[var(--color-neutral-700)] mb-4">A brief description of Project Alpha, highlighting its key features and technologies used.</p>
-        <a href="#" class="text-[var(--color-primary-accent)] hover:underline font-medium">Learn More &rarr;</a>
-      </div>
-      <!-- Project Card 2 -->
-      <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-        <h3 class="text-2xl font-semibold text-[var(--color-primary-default)] mb-2">Project Beta</h3>
-        <p class="text-[var(--color-neutral-700)] mb-4">A brief description of Project Beta, highlighting its key features and technologies used.</p>
-        <a href="#" class="text-[var(--color-primary-accent)] hover:underline font-medium">Learn More &rarr;</a>
-      </div>
-      <!-- Project Card 3 -->
-      <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-        <h3 class="text-2xl font-semibold text-[var(--color-primary-default)] mb-2">Project Gamma</h3>
-        <p class="text-[var(--color-neutral-700)] mb-4">A brief description of Project Gamma, highlighting its key features and technologies used.</p>
-        <a href="#" class="text-[var(--color-primary-accent)] hover:underline font-medium">Learn More &rarr;</a>
-      </div>
+      {#each featuredProjects as project}
+        <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
+          <h3 class="text-2xl font-semibold text-[var(--color-primary-default)] mb-2">{project.name}</h3>
+          <p class="text-[var(--color-neutral-700)] mb-4">{project.description}</p>
+          <a href={project.link} target="_blank" class="text-[var(--color-primary-accent)] hover:underline font-medium">Learn More &rarr;</a>
+        </div>
+      {/each}
     </div>
   </div>
 </section>
-
-
