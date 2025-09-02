@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.5 - 2025-09-02
+
+### Changed
+- Migrated To-Do List data storage from a JSON file to a Turso database to ensure persistence on Vercel.
+
+### Added
+- Functionality to mark To-Do List tasks as complete.
+
+### Fixed
+- Data persistence for the To-Do List on Vercel's serverless environment.
+
 ## 0.0.4 - 2025-08-29
 
 ### Added
