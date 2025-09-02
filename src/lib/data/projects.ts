@@ -7,33 +7,51 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    name: "Personal Website",
-    description: "Minimalist website built with SvelteKit and TailwindCSS.",
-    link: "https://ricardojose.com.br",
+    name: 'Personal Website',
+    description: 'Minimalist website built with SvelteKit and TailwindCSS.',
+    link: 'https://ricardojose.com.br',
     featured: true,
   },
   {
-    name: "Clock-in Helper",
-    description: "Chrome extension to streamline hour logging on Beefor.",
-    link: "https://github.com/your-username/clock-in-helper",
+    name: 'Clock-in Helper',
+    description: 'Chrome extension that streamlines hour logging on Beefor.',
+    link: 'https://github.com/pxzin/clock-in-helper',
     featured: false,
   },
   {
-    name: "Project Alpha",
-    description: "A brief description of Project Alpha, highlighting its key features and technologies used.",
-    link: "#",
-    featured: true, // Assuming this is also featured
+    name: 'Casa Esfera',
+    description:
+      'Comprehensive personal software platform that integrates various services into a unified interface.',
+    link: 'https://github.com/pxzin/casa-esfera',
+    featured: true,
   },
   {
-    name: "Project Beta",
-    description: "A brief description of Project Beta, highlighting its key features and technologies used.",
-    link: "#",
+    name: 'Real-time Log Sender',
+    description:
+      'Frontend real-time log sender using native WebSocket, Node+Express, Redis and Elasticsearch.',
+    link: 'https://ricardojose.com.br', // replace when repo is public
+    featured: false,
+  },
+  // --- Suggested projects for portfolio ---
+  {
+    name: 'OTT Demo',
+    description:
+      'IN DEVELOPMENT – Whitelabel OTT demo app built with Svelte 5, LightningJS, and WebSockets, simulating a Netflix-style interface.',
+    link: 'https://ricardojose.com.br',
+    featured: true,
+  },
+  {
+    name: 'Nutritionist Suite',
+    description:
+      'IN DEVELOPMENT – Web platform to help nutritionists manage patients, meal plans, and macros, built with SvelteKit and Node.',
+    link: 'https://ricardojose.com.br',
     featured: false,
   },
   {
-    name: "Project Gamma",
-    description: "A brief description of Project Gamma, highlighting its key features and technologies used.",
-    link: "#",
+    name: 'VigiLar',
+    description:
+      'IN DEVELOPMENT – Home security app with RTSP video streaming, WebSockets, and AES-256 encrypted credentials.',
+    link: 'https://ricardojose.com.br',
     featured: false,
   },
 ];
