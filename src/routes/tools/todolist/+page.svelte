@@ -5,7 +5,12 @@
 
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">
   <div class="max-w-2xl mx-auto px-4">
-    <h1 class="text-4xl font-bold text-[var(--color-primary-default)] mb-8 text-center">To-Do List</h1>
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold text-[var(--color-primary-default)]">To-Do List</h1>
+      <form method="POST" action="/login?/logout" use:enhance>
+        <button type="submit" class="text-sm text-gray-600 hover:text-primary-default">Logout</button>
+      </form>
+    </div>
 
     <form method="POST" action="?/add" use:enhance class="mb-8">
       <div class="flex items-center">
