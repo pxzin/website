@@ -10,4 +10,10 @@ export default defineConfig({
 	define: {
 		'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version),
 	},
+	test: {
+		include: ['src/**/*.{test,spec}.{js,ts}'],
+		globals: true,
+		environment: 'jsdom',
+		setupFiles: ['./setupTest.ts'],
+	},
 });

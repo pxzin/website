@@ -7,8 +7,7 @@ export const turso: Client = createClient({
 	authToken: TURSO_AUTH_TOKEN
 });
 
-// IIFE to create tables on module initialization
-(async () => {
+export const createTables = async () => {
 	const createTableQuery = `
     CREATE TABLE IF NOT EXISTS todos (
       id TEXT PRIMARY KEY,
@@ -54,15 +53,14 @@ export const turso: Client = createClient({
         FOREIGN KEY (category_id) REFERENCES categories(id)
       );
     `;
-	try {
-					await turso.batch([
+		try {
+			await turso.batch([
 				{ sql: createTableQuery, args: [] },
 				{ sql: createAccountsTableQuery, args: [] },
 				{ sql: createCategoriesTableQuery, args: [] },
 				{ sql: createTransactionsTableQuery, args: [] },
 			]);
-		console.log('Table "todos" is ready on server startup');
 	} catch (error) {
 		console.error('Error creating table on startup:', error);
 	}
-})();
+};
