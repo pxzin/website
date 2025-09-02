@@ -25,6 +25,9 @@
   $: accounts = data.accounts;
   $: categories = data.categories;
   $: transactions = data.transactions;
+  $: projections = data.projections;
+
+  $: totalBalance = accounts.reduce((sum, acc) => sum + acc.current_balance, 0);
 
   function resetAccountForm() {
     newAccountName = '';
@@ -52,11 +55,30 @@
     newTransactionInstallmentStartDate = null;
   }
 
+  function getCategoryName(categoryId: string) {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Unknown';
+  }
+
+  function getAccountName(accountId: string) {
+    const account = accounts.find(acc => acc.id === accountId);
+    return account ? account.name : 'Unknown';
+  }
+
 </script>
 
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">
   <div class="max-w-6xl mx-auto px-4">
-    <h1 class="text-4xl font-bold text-[var(--color-primary-default)] mb-8 text-center">Financial Overview</h1>
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold text-[var(--color-primary-default)]">Financial Overview</h1>
+      <form method="POST" action="/login?/logout" use:enhance>
+        <button type="submit" class="text-sm text-gray-600 hover:text-primary-default">Logout</button>
+      </form>
+    </div>
+
+    <div class="mb-8 text-center">
+      <h2 class="text-3xl font-semibold">Current Total Balance: <span class="text-[var(--color-primary-accent)]">${totalBalance.toFixed(2)}</span></h2>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
       <!-- Accounts Section -->
@@ -151,20 +173,39 @@
       </div>
     </div>
 
-    <!-- Transactions List (Placeholder) -->
-    <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
+    <!-- Transactions List -->
+    <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md mb-8">
       <h2 class="text-2xl font-semibold mb-4">Transactions</h2>
       <ul class="space-y-2">
         {#each transactions as transaction}
-          <li>{transaction.description} - ${transaction.amount.toFixed(2)} ({transaction.date})</li>
+          <li class="flex justify-between items-center p-2 border-b border-gray-200 last:border-b-0">
+            <div>
+              <span class="font-medium">{transaction.description}</span><br/>
+              <span class="text-sm text-gray-600">{getCategoryName(transaction.category_id)} - {getAccountName(transaction.account_id)} ({transaction.date})</span>
+            </div>
+            <span class="font-semibold" class:text-red-500={transaction.amount < 0} class:text-green-500={transaction.amount >= 0}>${transaction.amount.toFixed(2)}</span>
+          </li>
         {/each}
       </ul>
     </div>
 
-    <!-- Projections Section (Placeholder) -->
-    <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md mt-8">
+    <!-- Projections Section -->
+    <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
       <h2 class="text-2xl font-semibold mb-4">Projections</h2>
-      <p>Financial projections for the next months will appear here.</p>
+      <div class="space-y-4">
+        {#each projections as projection}
+          <div class="border p-4 rounded-lg">
+            <h3 class="text-xl font-semibold mb-2">{projection.month} {projection.year}</h3>
+            <p class="mb-2">Projected Balance: <span class="font-bold" class:text-red-500={projection.projected_balance < 0} class:text-green-500={projection.projected_balance >= 0}>${projection.projected_balance.toFixed(2)}</span></p>
+            <h4 class="text-lg font-medium mb-1">Transactions for this month:</h4>
+            <ul class="list-disc list-inside">
+              {#each projection.transactions as tx}
+                <li>{tx.description} - ${tx.amount.toFixed(2)}</li>
+              {/each}
+            </ul>
+          </div>
+        {/each}
+      </div>
     </div>
 
   </div>
