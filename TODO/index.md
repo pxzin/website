@@ -10,3 +10,4 @@ This file lists all planned and implemented tasks.
 - [x] Fix Navigation Bar Overlap and Spacing: `TODO/fix_nav_overlap_and_spacing.md`
 - [x] Unify Project Data Source: `TODO/unify_project_data.md`
 - [x] Implement Tools Section and To-Do List: `TODO/implement_tools_section_and_todolist.md`
+- [x] Fix To-Do List Data Storage on Vercel: `TODO/fix_todolist_data_storage_on_vercel.md`

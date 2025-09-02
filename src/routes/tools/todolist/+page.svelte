@@ -7,8 +7,8 @@
   <div class="max-w-2xl mx-auto px-4">
     <h1 class="text-4xl font-bold text-[var(--color-primary-default)] mb-8 text-center">To-Do List</h1>
 
-    <form method="POST" action="?/add" use:enhance>
-      <div class="flex items-center mb-8">
+    <form method="POST" action="?/add" use:enhance class="mb-8">
+      <div class="flex items-center">
         <input
           type="text"
           name="text"
@@ -27,8 +27,18 @@
     <ul class="space-y-4">
       {#each data.todos as todo}
         <li class="flex items-center justify-between p-4 bg-[var(--color-neutral-50)] rounded-lg shadow-md">
-          <span class="text-lg">{todo.text}</span>
-          <form method="POST" action="?/delete" use:enhance>
+          <form method="POST" action="?/toggle" use:enhance class="flex items-center flex-grow">
+            <input type="hidden" name="id" value={todo.id} />
+            <input type="hidden" name="completed" value={todo.completed} />
+            <input 
+              type="checkbox" 
+              checked={todo.completed}
+              class="h-6 w-6 mr-4 rounded border-gray-300 text-primary-default focus:ring-primary-accent"
+              on:change={(e) => e.currentTarget.form?.requestSubmit()}
+            />
+            <span class="text-lg flex-grow" class:line-through={todo.completed}>{todo.text}</span>
+          </form>
+          <form method="POST" action="?/delete" use:enhance class="ml-4">
             <input type="hidden" name="id" value={todo.id} />
             <button
               type="submit"
