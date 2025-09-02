@@ -9,3 +9,4 @@ This file lists all planned and implemented tasks.
 - [x] Improve Subpage UI/UX: `TODO/improve_subpage_ui.md`
 - [x] Fix Navigation Bar Overlap and Spacing: `TODO/fix_nav_overlap_and_spacing.md`
 - [x] Unify Project Data Source: `TODO/unify_project_data.md`
+- [x] Implement Tools Section and To-Do List: `TODO/implement_tools_section_and_todolist.md`

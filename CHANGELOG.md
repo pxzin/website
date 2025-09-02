@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.4 - 2025-08-29
+
+### Added
+- "Tools" section with a simple to-do list.
+- File-based data storage for the to-do list.
+
 ## 0.0.3 - 2025-08-29
 
 ### Added

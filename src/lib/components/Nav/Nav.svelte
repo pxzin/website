@@ -6,6 +6,7 @@
   $: isActiveAbout = $page.url.pathname === '/about';
   $: isActiveProjects = $page.url.pathname === '/projects';
   $: isActiveContact = $page.url.pathname === '/contact';
+  $: isActiveTools = $page.url.pathname === '/tools';
 </script>
 
 <nav class="bg-[var(--color-primary-default)] p-4 shadow-lg fixed top-0 left-0 w-full z-50">
@@ -18,6 +19,7 @@
       <li><a href="/about" class="text-white text-lg hover:text-[var(--color-primary-accent)] transition-colors duration-300" class:font-semibold={isActiveAbout}>About</a></li>
       <li><a href="/projects" class="text-white text-lg hover:text-[var(--color-primary-accent)] transition-colors duration-300" class:font-semibold={isActiveProjects}>Projects</a></li>
       <li><a href="/contact" class="text-white text-lg hover:text-[var(--color-primary-accent)] transition-colors duration-300" class:font-semibold={isActiveContact}>Contact</a></li>
+      <li><a href="/tools" class="text-white text-lg hover:text-[var(--color-primary-accent)] transition-colors duration-300" class:font-semibold={isActiveTools}>Tools</a></li>
     </ul>
   </div>
 </nav>
