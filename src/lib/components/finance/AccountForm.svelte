@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { slide } from 'svelte/transition';
+  import { showError, showSuccess } from '$lib/stores/toast';
 
   export let accounts: any[] = [];
   export let showForm = false;
@@ -74,7 +75,15 @@
             <form
               method="POST"
               action="?/deleteAccount"
-              use:enhance
+              use:enhance={({ formData }) => {
+                return async ({ result }) => {
+                  if (result.type === 'failure') {
+                    showError(result.data?.error || 'Failed to delete account');
+                  } else if (result.type === 'success') {
+                    showSuccess('Account deleted successfully');
+                  }
+                };
+              }}
               class="inline"
             >
               <input type="hidden" name="accountId" value={account.id} />
@@ -94,8 +103,16 @@
       <form
         method="POST"
         action="?/addAccount"
-        use:enhance
-        on:submit={resetForm}
+        use:enhance={({ formData }) => {
+          return async ({ result }) => {
+            if (result.type === 'failure') {
+              showError(result.data?.error || 'Failed to add account');
+            } else if (result.type === 'success') {
+              showSuccess('Account added successfully');
+              resetForm();
+            }
+          };
+        }}
         class="space-y-4"
       >
         <h3 class="text-lg font-semibold mb-3">Add New Account</h3>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { slide } from 'svelte/transition';
+  import { showError, showSuccess } from '$lib/stores/toast';
 
   export let accounts: any[] = [];
   export let categories: any[] = [];
@@ -57,8 +58,16 @@
       <form
         method="POST"
         action="?/addTransaction"
-        use:enhance
-        on:submit={resetForm}
+        use:enhance={({ formData }) => {
+          return async ({ result }) => {
+            if (result.type === 'failure') {
+              showError(result.data?.error || 'Failed to add transaction');
+            } else if (result.type === 'success') {
+              showSuccess('Transaction added successfully');
+              resetForm();
+            }
+          };
+        }}
         class="space-y-4"
       >
         <h3 class="text-lg font-semibold mb-3">Add New Transaction</h3>

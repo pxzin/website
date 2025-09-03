@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { slide } from 'svelte/transition';
+  import { showError, showSuccess } from '$lib/stores/toast';
 
   export let categories: any[] = [];
   export let showForm = false;
@@ -72,7 +73,15 @@
           <form
             method="POST"
             action="?/deleteCategory"
-            use:enhance
+            use:enhance={({ formData }) => {
+              return async ({ result }) => {
+                if (result.type === 'failure') {
+                  showError(result.data?.error || 'Failed to delete category');
+                } else if (result.type === 'success') {
+                  showSuccess('Category deleted successfully');
+                }
+              };
+            }}
             class="inline"
           >
             <input type="hidden" name="categoryId" value={category.id} />
@@ -91,8 +100,16 @@
       <form
         method="POST"
         action="?/addCategory"
-        use:enhance
-        on:submit={resetForm}
+        use:enhance={({ formData }) => {
+          return async ({ result }) => {
+            if (result.type === 'failure') {
+              showError(result.data?.error || 'Failed to add category');
+            } else if (result.type === 'success') {
+              showSuccess('Category added successfully');
+              resetForm();
+            }
+          };
+        }}
         class="space-y-4"
       >
         <h3 class="text-lg font-semibold mb-3">Add New Category</h3>
