@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
   import { slide } from 'svelte/transition';
   import { showError, showSuccess } from '$lib/stores/toast';
 
@@ -81,6 +82,7 @@
                     showError(result.data?.error || 'Failed to delete account');
                   } else if (result.type === 'success') {
                     showSuccess('Account deleted successfully');
+                    await invalidateAll();
                   }
                 };
               }}
@@ -110,6 +112,7 @@
             } else if (result.type === 'success') {
               showSuccess('Account added successfully');
               resetForm();
+              await invalidateAll();
             }
           };
         }}

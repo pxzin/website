@@ -507,4 +507,118 @@ export const actions = {
       return fail(500, { error: 'Failed to add transaction' });
     }
   },
+
+  importBackup: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const backupFile = data.get('backupFile') as File;
+
+      if (!backupFile) {
+        return fail(400, { error: 'No backup file provided' });
+      }
+
+      // Read and parse the backup file
+      const backupText = await backupFile.text();
+      let backup;
+
+      try {
+        backup = JSON.parse(backupText);
+      } catch (parseError) {
+        return fail(400, { error: 'Invalid JSON format in backup file' });
+      }
+
+      // Validate backup structure
+      if (
+        !backup.data ||
+        !backup.data.accounts ||
+        !backup.data.categories ||
+        !backup.data.transactions
+      ) {
+        return fail(400, { error: 'Invalid backup file structure' });
+      }
+
+      // Validate required fields in data
+      if (
+        !Array.isArray(backup.data.accounts) ||
+        !Array.isArray(backup.data.categories) ||
+        !Array.isArray(backup.data.transactions)
+      ) {
+        return fail(400, {
+          error:
+            'Backup data must contain arrays for accounts, categories, and transactions',
+        });
+      }
+
+      // Validate backup version compatibility
+      if (!backup.version || backup.version !== '1.0') {
+        return fail(400, {
+          error:
+            'Unsupported backup version. This tool only supports version 1.0 backups.',
+        });
+      }
+
+      // Clear all existing data first
+      await turso.execute('DELETE FROM transactions');
+      await turso.execute('DELETE FROM categories');
+      await turso.execute('DELETE FROM accounts');
+
+      // Import accounts
+      for (const account of backup.data.accounts) {
+        await turso.execute({
+          sql: 'INSERT INTO accounts (id, name, type, initial_balance, current_balance, credit_limit, due_day) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          args: [
+            account.id,
+            account.name,
+            account.type,
+            account.initial_balance,
+            account.current_balance,
+            account.credit_limit,
+            account.due_day,
+          ],
+        });
+      }
+
+      // Import categories
+      for (const category of backup.data.categories) {
+        await turso.execute({
+          sql: 'INSERT INTO categories (id, name, type) VALUES (?, ?, ?)',
+          args: [category.id, category.name, category.type],
+        });
+      }
+
+      // Import transactions
+      for (const transaction of backup.data.transactions) {
+        await turso.execute({
+          sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            transaction.id,
+            transaction.description,
+            transaction.amount,
+            transaction.date,
+            transaction.account_id,
+            transaction.category_id,
+            transaction.is_recurrent,
+            transaction.recurrence_interval,
+            transaction.installments_total,
+            transaction.installments_paid,
+            transaction.installment_start_date,
+          ],
+        });
+      }
+
+      return {
+        success: true,
+        message: `Backup imported successfully! Restored ${backup.data.accounts.length} accounts, ${backup.data.categories.length} categories, and ${backup.data.transactions.length} transactions.`,
+        imported: {
+          accounts: backup.data.accounts.length,
+          categories: backup.data.categories.length,
+          transactions: backup.data.transactions.length,
+        },
+      };
+    } catch (error) {
+      console.error('Error importing backup:', error);
+      return fail(500, { error: 'Failed to import backup' });
+    }
+  },
 };

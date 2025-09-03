@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
   import { slide } from 'svelte/transition';
   import { showError, showSuccess } from '$lib/stores/toast';
 
@@ -65,6 +66,7 @@
             } else if (result.type === 'success') {
               showSuccess('Transaction added successfully');
               resetForm();
+              await invalidateAll();
             }
           };
         }}

@@ -688,6 +688,12 @@
                 ⚠️ Clear ALL Data
               </button>
             </div>
+          </div>
+
+          <div class="pb-6">
+            <div class="grid grid-cols-1 gap-2">
+              <!-- Existing clear buttons stay here -->
+            </div>
             <div class="mt-2 text-xs text-gray-500">
               <p>⚠️ Clear operations only work in development mode</p>
               <p>💡 Create accounts and categories first, then transactions</p>
