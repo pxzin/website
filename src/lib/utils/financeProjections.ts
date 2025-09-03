@@ -46,13 +46,59 @@ export interface ProjectionMonth {
   net_change: number;
 }
 
+function calculateOptimalProjectionMonths(
+  transactions: Transaction[],
+  currentDate: Date
+): number {
+  let furthestMonth = 6; // Minimum 6 months
+
+  // Find the furthest installment transaction
+  transactions
+    .filter((tx) => tx.installments_total && tx.installments_paid !== null)
+    .forEach((tx) => {
+      const startDate = new Date(tx.installment_start_date || tx.date);
+      const totalInstallments = tx.installments_total || 0;
+      const paidInstallments = tx.installments_paid || 0;
+
+      // Calculate the month of the last installment
+      const lastInstallmentDate = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth() + totalInstallments - 1,
+        startDate.getDate()
+      );
+
+      // Calculate months from current date to last installment
+      const monthsDiff =
+        (lastInstallmentDate.getFullYear() - currentDate.getFullYear()) * 12 +
+        (lastInstallmentDate.getMonth() - currentDate.getMonth()) +
+        1;
+
+      if (monthsDiff > furthestMonth) {
+        furthestMonth = monthsDiff;
+      }
+    });
+
+  // Also check recurrent transactions (project at least 12 months for recurrent)
+  const hasRecurrentTransactions = transactions.some((tx) => tx.is_recurrent);
+  if (hasRecurrentTransactions && furthestMonth < 12) {
+    furthestMonth = 12;
+  }
+
+  return Math.max(furthestMonth, 6); // Ensure minimum 6 months
+}
+
 export function calculateProjections(
   accounts: Account[],
   transactions: Transaction[],
-  monthsToProject: number = 6,
+  monthsToProject?: number,
   currentDate?: Date
 ): ProjectionMonth[] {
   const projections: ProjectionMonth[] = [];
+  const today = currentDate || new Date();
+
+  // Calculate optimal projection months if not provided
+  const optimalMonths =
+    monthsToProject || calculateOptimalProjectionMonths(transactions, today);
 
   // Start with the current total balance from all accounts
   let projectedBalance = accounts.reduce(
@@ -60,11 +106,10 @@ export function calculateProjections(
     0
   );
 
-  const today = currentDate || new Date();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
 
-  for (let i = 0; i < monthsToProject; i++) {
+  for (let i = 0; i < optimalMonths; i++) {
     // Start projections from next month (i+1)
     const projectionMonth = currentMonth + i + 1;
     const adjustedMonth = projectionMonth % 12;
@@ -178,26 +223,32 @@ export function calculateProjections(
     const previousBalance = projectedBalance;
     projectedBalance += monthlyNet;
 
-    // Calculate account-specific balances (simplified - distributed proportionally)
+    // Calculate account-specific balances properly
     const accountBalances: {
       [accountId: string]: { name: string; balance: number; change: number };
     } = {};
-    const totalCurrentBalance = accounts.reduce(
-      (sum, acc) => sum + acc.current_balance,
-      0
-    );
 
+    // Initialize with current balances for first month, or use previous projection for subsequent months
     accounts.forEach((account) => {
-      const proportion =
-        totalCurrentBalance > 0
-          ? account.current_balance / totalCurrentBalance
-          : 1 / accounts.length;
-      const accountChange = monthlyNet * proportion;
-      const accountBalance = account.current_balance + accountChange * (i + 1); // Progressive change over months
+      let currentAccountBalance = account.current_balance;
+
+      // If this is not the first projection, get the balance from the previous month
+      if (i > 0 && projections[i - 1]) {
+        currentAccountBalance =
+          projections[i - 1].account_balances[account.id]?.balance ||
+          account.current_balance;
+      }
+
+      // Calculate the change for this specific account in this month
+      const accountChange = monthTransactions
+        .filter((tx) => tx.account_id === account.id)
+        .reduce((sum, tx) => sum + tx.amount, 0);
+
+      const newAccountBalance = currentAccountBalance + accountChange;
 
       accountBalances[account.id] = {
         name: account.name,
-        balance: accountBalance,
+        balance: newAccountBalance,
         change: accountChange,
       };
     });

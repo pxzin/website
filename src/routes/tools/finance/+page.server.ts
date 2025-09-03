@@ -179,7 +179,7 @@ export const actions = {
 
       const id = crypto.randomUUID();
 
-      // Add transaction
+      // Add transaction (store the total amount for reference)
       await turso.execute({
         sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
 				      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -198,10 +198,16 @@ export const actions = {
         ],
       });
 
+      // For installment transactions, only impact the account balance with the installment amount
+      let balanceImpact = amount;
+      if (installmentsTotal && installmentsTotal > 1) {
+        balanceImpact = amount / installmentsTotal;
+      }
+
       // Update account balance
       await turso.execute({
         sql: 'UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?',
-        args: [amount, accountId],
+        args: [balanceImpact, accountId],
       });
 
       return { success: true };
@@ -290,7 +296,7 @@ export const actions = {
 
       // Get transaction details before deleting
       const transactionResult = await turso.execute({
-        sql: 'SELECT amount, account_id FROM transactions WHERE id = ?',
+        sql: 'SELECT amount, account_id, installments_total FROM transactions WHERE id = ?',
         args: [transactionId],
       });
 
@@ -301,6 +307,13 @@ export const actions = {
       const transaction = transactionResult.rows[0];
       const amount = transaction.amount as number;
       const accountId = transaction.account_id as string;
+      const installmentsTotal = transaction.installments_total as number | null;
+
+      // Calculate the actual balance impact (for installments, it's the installment amount)
+      let balanceImpact = amount;
+      if (installmentsTotal && installmentsTotal > 1) {
+        balanceImpact = amount / installmentsTotal;
+      }
 
       // Delete transaction
       await turso.execute({
@@ -308,16 +321,190 @@ export const actions = {
         args: [transactionId],
       });
 
-      // Reverse the account balance change
+      // Reverse the account balance change (using the actual impact, not the total amount)
       await turso.execute({
         sql: 'UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?',
-        args: [amount, accountId],
+        args: [balanceImpact, accountId],
       });
 
       return { success: true };
     } catch (error) {
       console.error('Error deleting transaction:', error);
       return fail(500, { error: 'Failed to delete transaction' });
+    }
+  },
+
+  clearAllData: async ({ request }) => {
+    try {
+      // Only allow in development
+      if (import.meta.env.PROD) {
+        return fail(403, {
+          error: 'Clear operation not allowed in production',
+        });
+      }
+
+      // Delete in correct order due to foreign key constraints
+      // 1. Delete all transactions first
+      await turso.execute({
+        sql: 'DELETE FROM transactions',
+        args: [],
+      });
+
+      // 2. Delete all categories
+      await turso.execute({
+        sql: 'DELETE FROM categories',
+        args: [],
+      });
+
+      // 3. Delete all accounts
+      await turso.execute({
+        sql: 'DELETE FROM accounts',
+        args: [],
+      });
+
+      return { success: true, message: 'All data cleared successfully' };
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      return fail(500, { error: 'Failed to clear all data' });
+    }
+  },
+
+  clearTransactions: async ({ request }) => {
+    try {
+      // Only allow in development
+      if (import.meta.env.PROD) {
+        return fail(403, {
+          error: 'Clear operation not allowed in production',
+        });
+      }
+
+      // Delete all transactions and reset account balances to initial balance
+      const accountsResult = await turso.execute({
+        sql: 'SELECT id, initial_balance FROM accounts',
+        args: [],
+      });
+
+      // Delete all transactions
+      await turso.execute({
+        sql: 'DELETE FROM transactions',
+        args: [],
+      });
+
+      // Reset all account balances to initial balance
+      for (const account of accountsResult.rows) {
+        await turso.execute({
+          sql: 'UPDATE accounts SET current_balance = ? WHERE id = ?',
+          args: [account.initial_balance, account.id],
+        });
+      }
+
+      return {
+        success: true,
+        message: 'All transactions cleared and account balances reset',
+      };
+    } catch (error) {
+      console.error('Error clearing transactions:', error);
+      return fail(500, { error: 'Failed to clear transactions' });
+    }
+  },
+
+  addTransactionByName: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const description = data.get('description') as string;
+      let amount = parseFloat(data.get('amount') as string);
+      const date = data.get('date') as string;
+      const accountName = data.get('accountName') as string;
+      const categoryName = data.get('categoryName') as string;
+      const isRecurrent = data.get('isRecurrent') === 'true';
+      const recurrenceInterval =
+        (data.get('recurrenceInterval') as string) || null;
+      const installmentsTotal = data.get('installmentsTotal')
+        ? parseInt(data.get('installmentsTotal') as string)
+        : null;
+      const installmentsPaid = data.get('installmentsPaid')
+        ? parseInt(data.get('installmentsPaid') as string)
+        : null;
+      const installmentStartDate =
+        (data.get('installmentStartDate') as string) || null;
+
+      if (
+        !description ||
+        isNaN(amount) ||
+        !date ||
+        !accountName ||
+        !categoryName
+      ) {
+        return fail(400, { error: 'Invalid transaction data' });
+      }
+
+      // Find account by name
+      const accountResult = await turso.execute({
+        sql: 'SELECT id FROM accounts WHERE name = ?',
+        args: [accountName],
+      });
+
+      if (accountResult.rows.length === 0) {
+        return fail(400, { error: `Account "${accountName}" not found` });
+      }
+
+      const accountId = accountResult.rows[0].id as string;
+
+      // Find category by name
+      const categoryResult = await turso.execute({
+        sql: 'SELECT id, type FROM categories WHERE name = ?',
+        args: [categoryName],
+      });
+
+      if (categoryResult.rows.length === 0) {
+        return fail(400, { error: `Category "${categoryName}" not found` });
+      }
+
+      const categoryId = categoryResult.rows[0].id as string;
+      const categoryType = categoryResult.rows[0].type as string;
+
+      // If category is EXPENSE, make amount negative (unless it's already negative)
+      if (categoryType === 'EXPENSE' && amount > 0) {
+        amount = -amount;
+      }
+
+      const id = crypto.randomUUID();
+
+      // Add transaction (store the total amount for reference)
+      await turso.execute({
+        sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          id,
+          description,
+          amount,
+          date,
+          accountId,
+          categoryId,
+          isRecurrent ? 1 : 0,
+          recurrenceInterval,
+          installmentsTotal,
+          installmentsPaid,
+          installmentStartDate,
+        ],
+      });
+
+      // For installment transactions, only impact the account balance with the installment amount
+      let balanceImpact = amount;
+      if (installmentsTotal && installmentsTotal > 1) {
+        balanceImpact = amount / installmentsTotal;
+      }
+
+      // Update account balance
+      await turso.execute({
+        sql: 'UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?',
+        args: [balanceImpact, accountId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error adding transaction by name:', error);
+      return fail(500, { error: 'Failed to add transaction' });
     }
   },
 };

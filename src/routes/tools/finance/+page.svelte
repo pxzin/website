@@ -6,6 +6,7 @@
     TransactionForm,
     ProjectionsCarousel,
     CurrentMonthSummary,
+    InstallmentDetails,
   } from '$lib/components';
   import { showError, showSuccess } from '$lib/stores/toast';
   export let data;
@@ -74,6 +75,37 @@
       percentage,
       isComplete: paid >= total,
     };
+  }
+
+  function getInstallmentValues(transaction: any) {
+    if (!transaction.installments_total) return null;
+
+    const totalAmount = Math.abs(transaction.amount);
+    const installmentValue = totalAmount / transaction.installments_total;
+    const paidInstallments = transaction.installments_paid || 0;
+    const remainingInstallments =
+      transaction.installments_total - paidInstallments;
+
+    const totalPaid = installmentValue * paidInstallments;
+    const totalRemaining = installmentValue * remainingInstallments;
+
+    return {
+      installmentValue,
+      totalPaid,
+      totalRemaining,
+      paidInstallments,
+      remainingInstallments,
+      totalInstallments: transaction.installments_total,
+      isComplete: paidInstallments >= transaction.installments_total,
+    };
+  }
+
+  // Function to get the actual balance impact (installment amount for installments)
+  function getBalanceImpact(transaction: any) {
+    if (transaction.installments_total && transaction.installments_total > 1) {
+      return transaction.amount / transaction.installments_total;
+    }
+    return transaction.amount;
   }
 
   function formatRecurrenceInterval(interval: string | null) {
@@ -337,6 +369,12 @@
                   </div>
                 </div>
 
+                <!-- Installment Details -->
+                <InstallmentDetails
+                  transaction={installment}
+                  categoryType={getCategoryType(installment.category_id)}
+                />
+
                 <div class="mt-2 text-xs text-gray-500">
                   Start: {installment.installment_start_date ||
                     installment.date}
@@ -471,29 +509,17 @@
                       ) === 'EXPENSE'}
                     >
                       {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
-                        -${Math.abs(transaction.amount).toFixed(2)}
+                        -${Math.abs(getBalanceImpact(transaction)).toFixed(2)}
                       {:else}
-                        +${transaction.amount.toFixed(2)}
+                        +${getBalanceImpact(transaction).toFixed(2)}
                       {/if}
                     </div>
-                    {#if transaction.installments_total}
-                      {@const installmentStatus =
-                        getInstallmentStatus(transaction)}
-                      {#if installmentStatus}
-                        <div class="text-xs text-gray-500">
-                          {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
-                            -${Math.abs(
-                              transaction.amount /
-                                transaction.installments_total
-                            ).toFixed(2)}/installment
-                          {:else}
-                            +${(
-                              transaction.amount /
-                              transaction.installments_total
-                            ).toFixed(2)}/installment
-                          {/if}
-                        </div>
-                      {/if}
+                    {#if transaction.installments_total && transaction.installments_total > 1}
+                      <div class="text-xs text-gray-500">
+                        Total: {#if getCategoryType(transaction.category_id) === 'EXPENSE'}-{/if}${Math.abs(
+                          transaction.amount
+                        ).toFixed(2)}
+                      </div>
                     {/if}
                   </div>
                   <form
@@ -613,29 +639,17 @@
                       ) === 'EXPENSE'}
                     >
                       {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
-                        -${Math.abs(transaction.amount).toFixed(2)}
+                        -${Math.abs(getBalanceImpact(transaction)).toFixed(2)}
                       {:else}
-                        +${transaction.amount.toFixed(2)}
+                        +${getBalanceImpact(transaction).toFixed(2)}
                       {/if}
                     </div>
-                    {#if transaction.installments_total}
-                      {@const installmentStatus =
-                        getInstallmentStatus(transaction)}
-                      {#if installmentStatus}
-                        <div class="text-xs text-gray-500">
-                          {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
-                            -${Math.abs(
-                              transaction.amount /
-                                transaction.installments_total
-                            ).toFixed(2)}/installment
-                          {:else}
-                            +${(
-                              transaction.amount /
-                              transaction.installments_total
-                            ).toFixed(2)}/installment
-                          {/if}
-                        </div>
-                      {/if}
+                    {#if transaction.installments_total && transaction.installments_total > 1}
+                      <div class="text-xs text-gray-500">
+                        Total: {#if getCategoryType(transaction.category_id) === 'EXPENSE'}-{/if}${Math.abs(
+                          transaction.amount
+                        ).toFixed(2)}
+                      </div>
                     {/if}
                   </div>
                   <form

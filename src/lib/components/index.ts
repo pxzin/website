@@ -6,6 +6,7 @@ export { default as AccountForm } from './finance/AccountForm.svelte';
 export { default as CategoryForm } from './finance/CategoryForm.svelte';
 export { default as TransactionForm } from './finance/TransactionForm.svelte';
 export { default as CurrentMonthSummary } from './finance/CurrentMonthSummary.svelte';
+export { default as InstallmentDetails } from './finance/InstallmentDetails.svelte';
 export { default as Toast } from './Toast.svelte';
 export { default as ToastContainer } from './ToastContainer.svelte';
 export { default as DebugDrawer } from './DebugDrawer.svelte';
