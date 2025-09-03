@@ -38,6 +38,19 @@
     (tx) => !tx.is_recurrent && !tx.installments_total
   );
 
+  // Tab state for transactions section
+  let activeTransactionsTab = 'current'; // 'current' or 'all'
+
+  // Get current month transactions
+  $: currentMonthTransactions = transactions.filter((tx) => {
+    const txDate = new Date(tx.date);
+    const now = new Date();
+    return (
+      txDate.getMonth() === now.getMonth() &&
+      txDate.getFullYear() === now.getFullYear()
+    );
+  });
+
   function resetAccountForm() {
     newAccountName = '';
     newAccountType = 'CHECKING';
@@ -522,7 +535,7 @@
                 <!-- Progress Bar -->
                 <div class="mb-2">
                   <div class="flex justify-between text-xs text-gray-600 mb-1">
-                    <span>{status.paid}/{status.total} parcelas</span>
+                    <span>{status.paid}/{status.total} installments</span>
                     <span>{status.percentage}%</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
@@ -538,7 +551,7 @@
                     <span
                       class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
                     >
-                      📊 {status.remaining} restantes
+                      📊 {status.remaining} remaining
                     </span>
                     {#if getCategoryType(installment.category_id) === 'INCOME'}
                       <span
@@ -572,11 +585,11 @@
                       {#if getCategoryType(installment.category_id) === 'EXPENSE'}
                         -${Math.abs(
                           installment.amount / installment.installments_total
-                        ).toFixed(2)}/parcela
+                        ).toFixed(2)}/installment
                       {:else}
                         +${(
                           installment.amount / installment.installments_total
-                        ).toFixed(2)}/parcela
+                        ).toFixed(2)}/installment
                       {/if}
                     </div>
                   </div>
@@ -596,134 +609,316 @@
     <!-- Transactions List -->
     <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md mb-8">
       <h2 class="text-2xl font-semibold mb-4">Transactions</h2>
-      <ul class="space-y-2">
-        {#each transactions as transaction}
-          <li
-            class="flex justify-between items-center p-3 border-b border-gray-200 last:border-b-0 bg-white rounded mb-2 shadow-sm"
-          >
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                {#if getCategoryType(transaction.category_id) === 'INCOME'}
-                  <span class="text-green-600 font-bold">↗️</span>
-                  <span class="font-medium">{transaction.description}</span>
-                  <span
-                    class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
-                    >INCOME</span
-                  >
-                {:else}
-                  <span class="text-red-600 font-bold">↘️</span>
-                  <span class="font-medium">{transaction.description}</span>
-                  <span
-                    class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
-                    >EXPENSE</span
-                  >
-                {/if}
-              </div>
 
-              <!-- Transaction Info -->
-              <div class="text-sm text-gray-600 mb-1">
-                {getCategoryName(transaction.category_id)} - {getAccountName(
-                  transaction.account_id
-                )} ({transaction.date})
-              </div>
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-200 mb-4">
+        <button
+          class="px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200"
+          class:border-blue-500={activeTransactionsTab === 'current'}
+          class:text-blue-600={activeTransactionsTab === 'current'}
+          class:border-transparent={activeTransactionsTab !== 'current'}
+          class:text-gray-500={activeTransactionsTab !== 'current'}
+          on:click={() => (activeTransactionsTab = 'current')}
+        >
+          Current Month ({currentMonthTransactions.length})
+        </button>
+        <button
+          class="px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ml-4"
+          class:border-blue-500={activeTransactionsTab === 'all'}
+          class:text-blue-600={activeTransactionsTab === 'all'}
+          class:border-transparent={activeTransactionsTab !== 'all'}
+          class:text-gray-500={activeTransactionsTab !== 'all'}
+          on:click={() => (activeTransactionsTab = 'all')}
+        >
+          All Transactions ({transactions.length})
+        </button>
+      </div>
 
-              <!-- Installment and Recurrence Info -->
-              <div class="flex flex-wrap gap-1">
-                {#if transaction.is_recurrent}
-                  <span
-                    class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1"
-                  >
-                    🔄 {formatRecurrenceInterval(
-                      transaction.recurrence_interval
-                    )}
-                  </span>
-                {/if}
-
-                {#if transaction.installments_total}
-                  {@const installmentStatus = getInstallmentStatus(transaction)}
-                  {#if installmentStatus}
-                    <span
-                      class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1"
-                    >
-                      📊 {installmentStatus.paid}/{installmentStatus.total} parcelas
-                    </span>
-                    <span
-                      class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
-                    >
-                      {installmentStatus.percentage}% pago
-                    </span>
-                    {#if installmentStatus.isComplete}
+      <!-- Tab Content -->
+      {#if activeTransactionsTab === 'current'}
+        <div class="space-y-2">
+          {#if currentMonthTransactions.length === 0}
+            <div class="text-center text-gray-500 py-8">
+              <p class="text-lg">No transactions found for this month</p>
+              <p class="text-sm">Add transactions using the form above</p>
+            </div>
+          {:else}
+            {#each currentMonthTransactions as transaction}
+              <div
+                class="flex justify-between items-center p-3 border-b border-gray-200 last:border-b-0 bg-white rounded mb-2 shadow-sm"
+              >
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    {#if getCategoryType(transaction.category_id) === 'INCOME'}
+                      <span class="text-green-600 font-bold">↗️</span>
+                      <span class="font-medium">{transaction.description}</span>
                       <span
                         class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
+                        >INCOME</span
                       >
-                        ✅ Concluído
-                      </span>
                     {:else}
+                      <span class="text-red-600 font-bold">↘️</span>
+                      <span class="font-medium">{transaction.description}</span>
                       <span
-                        class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full"
+                        class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
+                        >EXPENSE</span
                       >
-                        ⏳ {installmentStatus.remaining} restantes
+                    {/if}
+                  </div>
+
+                  <!-- Transaction Info -->
+                  <div class="text-sm text-gray-600 mb-1">
+                    {getCategoryName(transaction.category_id)} - {getAccountName(
+                      transaction.account_id
+                    )} ({transaction.date})
+                  </div>
+
+                  <!-- Installment and Recurrence Info -->
+                  <div class="flex flex-wrap gap-1">
+                    {#if transaction.is_recurrent}
+                      <span
+                        class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1"
+                      >
+                        🔄 {formatRecurrenceInterval(
+                          transaction.recurrence_interval
+                        )}
                       </span>
                     {/if}
-                  {/if}
-                {/if}
-              </div>
-            </div>
 
-            <div class="flex items-center gap-2 ml-4">
-              <div class="text-right">
-                <div
-                  class="font-semibold text-lg"
-                  class:text-green-500={getCategoryType(
-                    transaction.category_id
-                  ) === 'INCOME'}
-                  class:text-red-500={getCategoryType(
-                    transaction.category_id
-                  ) === 'EXPENSE'}
-                >
-                  {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
-                    -${Math.abs(transaction.amount).toFixed(2)}
-                  {:else}
-                    +${transaction.amount.toFixed(2)}
-                  {/if}
+                    {#if transaction.installments_total}
+                      {@const installmentStatus =
+                        getInstallmentStatus(transaction)}
+                      {#if installmentStatus}
+                        <span
+                          class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1"
+                        >
+                          📊 {installmentStatus.paid}/{installmentStatus.total} installments
+                        </span>
+                        <span
+                          class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
+                        >
+                          {installmentStatus.percentage}% paid
+                        </span>
+                        {#if installmentStatus.isComplete}
+                          <span
+                            class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
+                          >
+                            ✅ Completed
+                          </span>
+                        {:else}
+                          <span
+                            class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full"
+                          >
+                            ⏳ {installmentStatus.remaining} remaining
+                          </span>
+                        {/if}
+                      {/if}
+                    {/if}
+                  </div>
                 </div>
-                {#if transaction.installments_total}
-                  {@const installmentStatus = getInstallmentStatus(transaction)}
-                  {#if installmentStatus}
-                    <div class="text-xs text-gray-500">
+
+                <div class="flex items-center gap-2 ml-4">
+                  <div class="text-right">
+                    <div
+                      class="font-semibold text-lg"
+                      class:text-green-500={getCategoryType(
+                        transaction.category_id
+                      ) === 'INCOME'}
+                      class:text-red-500={getCategoryType(
+                        transaction.category_id
+                      ) === 'EXPENSE'}
+                    >
                       {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
-                        -${Math.abs(
-                          transaction.amount / transaction.installments_total
-                        ).toFixed(2)}/parcela
+                        -${Math.abs(transaction.amount).toFixed(2)}
                       {:else}
-                        +${(
-                          transaction.amount / transaction.installments_total
-                        ).toFixed(2)}/parcela
+                        +${transaction.amount.toFixed(2)}
                       {/if}
                     </div>
-                  {/if}
-                {/if}
+                    {#if transaction.installments_total}
+                      {@const installmentStatus =
+                        getInstallmentStatus(transaction)}
+                      {#if installmentStatus}
+                        <div class="text-xs text-gray-500">
+                          {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
+                            -${Math.abs(
+                              transaction.amount /
+                                transaction.installments_total
+                            ).toFixed(2)}/installment
+                          {:else}
+                            +${(
+                              transaction.amount /
+                              transaction.installments_total
+                            ).toFixed(2)}/installment
+                          {/if}
+                        </div>
+                      {/if}
+                    {/if}
+                  </div>
+                  <form
+                    method="POST"
+                    action="?/deleteTransaction"
+                    use:enhance
+                    class="inline"
+                  >
+                    <input
+                      type="hidden"
+                      name="transactionId"
+                      value={transaction.id}
+                    />
+                    <button
+                      type="submit"
+                      class="text-red-500 text-sm hover:underline"
+                      >Delete</button
+                    >
+                  </form>
+                </div>
               </div>
-              <form
-                method="POST"
-                action="?/deleteTransaction"
-                use:enhance
-                class="inline"
-              >
-                <input
-                  type="hidden"
-                  name="transactionId"
-                  value={transaction.id}
-                />
-                <button
-                  type="submit"
-                  class="text-red-500 text-sm hover:underline">Delete</button
-                >
-              </form>
+            {/each}
+          {/if}
+        </div>
+      {:else}
+        <!-- All Transactions Tab -->
+        <div class="space-y-2">
+          {#if transactions.length === 0}
+            <div class="text-center text-gray-500 py-8">
+              <p class="text-lg">No transactions found</p>
+              <p class="text-sm">Add transactions using the form above</p>
             </div>
-          </li>
-        {/each}
-      </ul>
+          {:else}
+            {#each transactions as transaction}
+              <div
+                class="flex justify-between items-center p-3 border-b border-gray-200 last:border-b-0 bg-white rounded mb-2 shadow-sm"
+              >
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    {#if getCategoryType(transaction.category_id) === 'INCOME'}
+                      <span class="text-green-600 font-bold">↗️</span>
+                      <span class="font-medium">{transaction.description}</span>
+                      <span
+                        class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
+                        >INCOME</span
+                      >
+                    {:else}
+                      <span class="text-red-600 font-bold">↘️</span>
+                      <span class="font-medium">{transaction.description}</span>
+                      <span
+                        class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
+                        >EXPENSE</span
+                      >
+                    {/if}
+                  </div>
+
+                  <!-- Transaction Info -->
+                  <div class="text-sm text-gray-600 mb-1">
+                    {getCategoryName(transaction.category_id)} - {getAccountName(
+                      transaction.account_id
+                    )} ({transaction.date})
+                  </div>
+
+                  <!-- Installment and Recurrence Info -->
+                  <div class="flex flex-wrap gap-1">
+                    {#if transaction.is_recurrent}
+                      <span
+                        class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1"
+                      >
+                        🔄 {formatRecurrenceInterval(
+                          transaction.recurrence_interval
+                        )}
+                      </span>
+                    {/if}
+
+                    {#if transaction.installments_total}
+                      {@const installmentStatus =
+                        getInstallmentStatus(transaction)}
+                      {#if installmentStatus}
+                        <span
+                          class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1"
+                        >
+                          📊 {installmentStatus.paid}/{installmentStatus.total} installments
+                        </span>
+                        <span
+                          class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
+                        >
+                          {installmentStatus.percentage}% paid
+                        </span>
+                        {#if installmentStatus.isComplete}
+                          <span
+                            class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
+                          >
+                            ✅ Completed
+                          </span>
+                        {:else}
+                          <span
+                            class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full"
+                          >
+                            ⏳ {installmentStatus.remaining} remaining
+                          </span>
+                        {/if}
+                      {/if}
+                    {/if}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 ml-4">
+                  <div class="text-right">
+                    <div
+                      class="font-semibold text-lg"
+                      class:text-green-500={getCategoryType(
+                        transaction.category_id
+                      ) === 'INCOME'}
+                      class:text-red-500={getCategoryType(
+                        transaction.category_id
+                      ) === 'EXPENSE'}
+                    >
+                      {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
+                        -${Math.abs(transaction.amount).toFixed(2)}
+                      {:else}
+                        +${transaction.amount.toFixed(2)}
+                      {/if}
+                    </div>
+                    {#if transaction.installments_total}
+                      {@const installmentStatus =
+                        getInstallmentStatus(transaction)}
+                      {#if installmentStatus}
+                        <div class="text-xs text-gray-500">
+                          {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
+                            -${Math.abs(
+                              transaction.amount /
+                                transaction.installments_total
+                            ).toFixed(2)}/installment
+                          {:else}
+                            +${(
+                              transaction.amount /
+                              transaction.installments_total
+                            ).toFixed(2)}/installment
+                          {/if}
+                        </div>
+                      {/if}
+                    {/if}
+                  </div>
+                  <form
+                    method="POST"
+                    action="?/deleteTransaction"
+                    use:enhance
+                    class="inline"
+                  >
+                    <input
+                      type="hidden"
+                      name="transactionId"
+                      value={transaction.id}
+                    />
+                    <button
+                      type="submit"
+                      class="text-red-500 text-sm hover:underline"
+                      >Delete</button
+                    >
+                  </form>
+                </div>
+              </div>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <!-- Projections Section -->
@@ -781,13 +976,13 @@
                         <span
                           class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1"
                         >
-                          📊 Parcela {tx.installment_number}
+                          📊 Installment {tx.installment_number}
                         </span>
                         {#if tx.installments_total}
                           <span
                             class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
                           >
-                            de {tx.installments_total}
+                            of {tx.installments_total}
                           </span>
                           <span
                             class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
@@ -795,7 +990,7 @@
                             ({Math.round(
                               (tx.installment_number / tx.installments_total) *
                                 100
-                            )}% do total)
+                            )}% of total)
                           </span>
                         {/if}
                       {/if}
