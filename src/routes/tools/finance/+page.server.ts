@@ -140,7 +140,7 @@ export const actions = {
     try {
       const data = await request.formData();
       const description = data.get('description') as string;
-      const amount = parseFloat(data.get('amount') as string);
+      let amount = parseFloat(data.get('amount') as string);
       const date = data.get('date') as string;
       const accountId = data.get('accountId') as string;
       const categoryId = data.get('categoryId') as string;
@@ -158,6 +158,23 @@ export const actions = {
 
       if (!description || isNaN(amount) || !date || !accountId || !categoryId) {
         return fail(400, { error: 'Invalid transaction data' });
+      }
+
+      // Get category to check if it's EXPENSE type
+      const categoryResult = await turso.execute({
+        sql: 'SELECT type FROM categories WHERE id = ?',
+        args: [categoryId],
+      });
+
+      if (categoryResult.rows.length === 0) {
+        return fail(400, { error: 'Category not found' });
+      }
+
+      const categoryType = categoryResult.rows[0].type as string;
+
+      // If category is EXPENSE, make amount negative (unless it's already negative)
+      if (categoryType === 'EXPENSE' && amount > 0) {
+        amount = -amount;
       }
 
       const id = crypto.randomUUID();

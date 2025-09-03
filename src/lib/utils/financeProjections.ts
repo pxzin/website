@@ -52,54 +52,59 @@ export function calculateProjections(
   );
 
   const today = new Date();
-  let currentMonth = today.getMonth();
-  let currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
 
   for (let i = 0; i < monthsToProject; i++) {
-    const monthName = new Date(currentYear, currentMonth).toLocaleString(
+    // Start projections from next month (i+1)
+    const projectionMonth = currentMonth + i + 1;
+    const projectionYear = currentYear + Math.floor(projectionMonth / 12);
+    const adjustedMonth = projectionMonth % 12;
+
+    const monthName = new Date(projectionYear, adjustedMonth).toLocaleString(
       'default',
       { month: 'long' }
     );
     const monthTransactions: Transaction[] = [];
 
-    // For the current month (i=0), include only non-recurrent and non-installment transactions
-    // that are in the current month. These represent one-time transactions that haven't happened yet
-    // or need to be projected for this month.
-    if (i === 0) {
-      transactions
-        .filter((tx) => {
-          const txDate = new Date(tx.date);
-          return (
-            !tx.is_recurrent &&
-            !tx.installments_total &&
-            txDate.getMonth() === currentMonth &&
-            txDate.getFullYear() === currentYear
-          );
-        })
-        .forEach((tx) => monthTransactions.push(tx));
-    }
+    // Include future non-recurrent, non-installment transactions for this month
+    transactions
+      .filter((tx) => {
+        const txDate = new Date(tx.date);
+        return (
+          !tx.is_recurrent &&
+          !tx.installments_total &&
+          txDate.getMonth() === adjustedMonth &&
+          txDate.getFullYear() === projectionYear
+        );
+      })
+      .forEach((tx) => monthTransactions.push(tx));
 
-    // Generate recurrent transactions for the current projected month
+    // Generate recurrent transactions for the projected month
     transactions
       .filter((tx) => tx.is_recurrent)
       .forEach((tx) => {
         const originalDate = new Date(tx.date);
         let shouldInclude = false;
 
-        // Check if this recurrent transaction should appear in the current projection month
+        // Check if this recurrent transaction should appear in the projected month
         if (tx.recurrence_interval === 'MONTHLY') {
           // For monthly recurrence, include in every month
           shouldInclude = true;
         } else if (tx.recurrence_interval === 'YEARLY') {
           // For yearly recurrence, include only if it's the same month as the original transaction
-          shouldInclude = originalDate.getMonth() === currentMonth;
+          shouldInclude = originalDate.getMonth() === adjustedMonth;
         }
 
         if (shouldInclude) {
           const recurrentTx: Transaction = {
             ...tx,
             id: crypto.randomUUID(),
-            date: new Date(currentYear, currentMonth, originalDate.getDate())
+            date: new Date(
+              projectionYear,
+              adjustedMonth,
+              originalDate.getDate()
+            )
               .toISOString()
               .split('T')[0],
             is_recurrent: true, // Ensure this flag is maintained
@@ -127,8 +132,8 @@ export function calculateProjections(
 
           // Only consider installments that are due in the current projected month AND are not yet paid
           if (
-            installmentDate.getMonth() === currentMonth &&
-            installmentDate.getFullYear() === currentYear &&
+            installmentDate.getMonth() === adjustedMonth &&
+            installmentDate.getFullYear() === projectionYear &&
             k >= paidInstallments
           ) {
             const installmentTx: Transaction = {
@@ -156,13 +161,6 @@ export function calculateProjections(
       projected_balance: projectedBalance,
       transactions: monthTransactions,
     });
-
-    // Move to next month
-    currentMonth++;
-    if (currentMonth > 11) {
-      currentMonth = 0;
-      currentYear++;
-    }
   }
 
   return projections;
