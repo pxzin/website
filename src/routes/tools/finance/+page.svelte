@@ -8,6 +8,7 @@
     ProjectionsCarousel,
     CurrentMonthSummary,
     InstallmentDetails,
+    FormDrawer,
   } from '$lib/components';
   import {
     showError,
@@ -36,7 +37,11 @@
   // Tab state for transactions section
   let activeTransactionsTab = 'current'; // 'current' or 'all'
 
-  // Form visibility states
+  // Drawer state
+  let showFormDrawer = false;
+  let activeForm = 'account'; // 'account', 'category', or 'transaction'
+
+  // Form visibility states (kept for FormDrawer)
   let showAccountForm = false;
   let showCategoryForm = false;
   let showTransactionForm = false;
@@ -124,6 +129,29 @@
       default:
         return interval;
     }
+  }
+
+  // Drawer functions
+  function openFormDrawer(formType: 'account' | 'category' | 'transaction') {
+    activeForm = formType;
+    showFormDrawer = true;
+
+    // Reset all form states
+    showAccountForm = false;
+    showCategoryForm = false;
+    showTransactionForm = false;
+
+    // Show the requested form
+    if (formType === 'account') showAccountForm = true;
+    else if (formType === 'category') showCategoryForm = true;
+    else if (formType === 'transaction') showTransactionForm = true;
+  }
+
+  function closeFormDrawer() {
+    showFormDrawer = false;
+    showAccountForm = false;
+    showCategoryForm = false;
+    showTransactionForm = false;
   }
 
   // Helper function for delete transaction enhance
@@ -327,14 +355,39 @@
       </div>
     {/if}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-      <AccountForm {accounts} bind:showForm={showAccountForm} />
-      <CategoryForm {categories} bind:showForm={showCategoryForm} />
-      <TransactionForm
-        {accounts}
-        {categories}
-        bind:showForm={showTransactionForm}
-      />
+    <!-- Quick Actions Section -->
+    <div
+      class="bg-blue-50 p-6 rounded-lg shadow-md mb-8 border-l-4 border-blue-500"
+    >
+      <h2 class="text-2xl font-semibold mb-4 text-blue-800">
+        ⚡ Quick Actions
+      </h2>
+      <p class="text-blue-700 mb-4">
+        Manage your accounts, categories, and transactions with ease.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button
+          on:click={() => openFormDrawer('account')}
+          class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+        >
+          <span>🏦</span>
+          Add Account
+        </button>
+        <button
+          on:click={() => openFormDrawer('category')}
+          class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+        >
+          <span>🏷️</span>
+          Add Category
+        </button>
+        <button
+          on:click={() => openFormDrawer('transaction')}
+          class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+        >
+          <span>💰</span>
+          Add Transaction
+        </button>
+      </div>
     </div>
 
     <!-- Backup & Data Management Section -->
@@ -887,3 +940,18 @@
     />
   </div>
 </section>
+
+<!-- Form Drawer -->
+<FormDrawer bind:show={showFormDrawer} on:close={closeFormDrawer}>
+  {#if showAccountForm}
+    <AccountForm {accounts} bind:showForm={showAccountForm} />
+  {:else if showCategoryForm}
+    <CategoryForm {categories} bind:showForm={showCategoryForm} />
+  {:else if showTransactionForm}
+    <TransactionForm
+      {accounts}
+      {categories}
+      bind:showForm={showTransactionForm}
+    />
+  {/if}
+</FormDrawer>

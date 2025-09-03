@@ -10,3 +10,4 @@ export { default as InstallmentDetails } from './finance/InstallmentDetails.svel
 export { default as Toast } from './Toast.svelte';
 export { default as ToastContainer } from './ToastContainer.svelte';
 export { default as DebugDrawer } from './DebugDrawer.svelte';
+export { default as FormDrawer } from './FormDrawer.svelte';
