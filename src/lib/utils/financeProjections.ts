@@ -35,7 +35,15 @@ export interface ProjectionMonth {
   month: string;
   year: number;
   projected_balance: number;
+  previous_balance: number;
+  balance_change: number;
   transactions: Transaction[];
+  account_balances: {
+    [accountId: string]: { name: string; balance: number; change: number };
+  };
+  total_income: number;
+  total_expenses: number;
+  net_change: number;
 }
 
 export function calculateProjections(
@@ -153,13 +161,57 @@ export function calculateProjections(
       (sum, tx) => sum + tx.amount,
       0
     );
+
+    // Calculate income and expenses
+    const totalIncome = monthTransactions
+      .filter((tx) => tx.amount > 0)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const totalExpenses = Math.abs(
+      monthTransactions
+        .filter((tx) => tx.amount < 0)
+        .reduce((sum, tx) => sum + tx.amount, 0)
+    );
+
+    // Store previous balance before applying changes
+    const previousBalance = projectedBalance;
     projectedBalance += monthlyNet;
+
+    // Calculate account-specific balances (simplified - distributed proportionally)
+    const accountBalances: {
+      [accountId: string]: { name: string; balance: number; change: number };
+    } = {};
+    const totalCurrentBalance = accounts.reduce(
+      (sum, acc) => sum + acc.current_balance,
+      0
+    );
+
+    accounts.forEach((account) => {
+      const proportion =
+        totalCurrentBalance > 0
+          ? account.current_balance / totalCurrentBalance
+          : 1 / accounts.length;
+      const accountChange = monthlyNet * proportion;
+      const accountBalance = account.current_balance + accountChange * (i + 1); // Progressive change over months
+
+      accountBalances[account.id] = {
+        name: account.name,
+        balance: accountBalance,
+        change: accountChange,
+      };
+    });
 
     projections.push({
       month: monthName,
       year: currentYear,
       projected_balance: projectedBalance,
+      previous_balance: previousBalance,
+      balance_change: monthlyNet,
       transactions: monthTransactions,
+      account_balances: accountBalances,
+      total_income: totalIncome,
+      total_expenses: totalExpenses,
+      net_change: monthlyNet,
     });
   }
 
