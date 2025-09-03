@@ -1,27 +1,13 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { ProjectionsCarousel } from '$lib/components';
+  import {
+    AccountForm,
+    CategoryForm,
+    TransactionForm,
+    ProjectionsCarousel,
+    CurrentMonthSummary,
+  } from '$lib/components';
   export let data;
-
-  let newAccountName = '';
-  let newAccountType = 'CHECKING';
-  let newAccountInitialBalance = 0;
-  let newAccountCreditLimit: number | null = null;
-  let newAccountDueDay: number | null = null;
-
-  let newCategoryName = '';
-  let newCategoryType = 'EXPENSE';
-
-  let newTransactionDescription = '';
-  let newTransactionAmount = 0;
-  let newTransactionDate = new Date().toISOString().split('T')[0];
-  let newTransactionAccountId = '';
-  let newTransactionCategoryId = '';
-  let newTransactionIsRecurrent = false;
-  let newTransactionRecurrenceInterval = 'MONTHLY';
-  let newTransactionInstallmentsTotal: number | null = null;
-  let newTransactionInstallmentsPaid: number | null = null;
-  let newTransactionInstallmentStartDate: string | null = null;
 
   $: accounts = data.accounts;
   $: categories = data.categories;
@@ -42,6 +28,11 @@
   // Tab state for transactions section
   let activeTransactionsTab = 'current'; // 'current' or 'all'
 
+  // Form visibility states
+  let showAccountForm = false;
+  let showCategoryForm = false;
+  let showTransactionForm = false;
+
   // Get current month transactions
   $: currentMonthTransactions = transactions.filter((tx) => {
     const txDate = new Date(tx.date);
@@ -51,32 +42,6 @@
       txDate.getFullYear() === now.getFullYear()
     );
   });
-
-  function resetAccountForm() {
-    newAccountName = '';
-    newAccountType = 'CHECKING';
-    newAccountInitialBalance = 0;
-    newAccountCreditLimit = null;
-    newAccountDueDay = null;
-  }
-
-  function resetCategoryForm() {
-    newCategoryName = '';
-    newCategoryType = 'EXPENSE';
-  }
-
-  function resetTransactionForm() {
-    newTransactionDescription = '';
-    newTransactionAmount = 0;
-    newTransactionDate = new Date().toISOString().split('T')[0];
-    newTransactionAccountId = '';
-    newTransactionCategoryId = '';
-    newTransactionIsRecurrent = false;
-    newTransactionRecurrenceInterval = 'MONTHLY';
-    newTransactionInstallmentsTotal = null;
-    newTransactionInstallmentsPaid = null;
-    newTransactionInstallmentStartDate = null;
-  }
 
   function getCategoryName(categoryId: string) {
     const category = categories.find((cat) => cat.id === categoryId);
@@ -138,284 +103,59 @@
       </form>
     </div>
 
-    <div class="mb-8 text-center">
-      <h2 class="text-3xl font-semibold">
-        Current Total Balance: <span class="text-[var(--color-primary-accent)]"
-          >${totalBalance.toFixed(2)}</span
-        >
-      </h2>
-    </div>
+    <CurrentMonthSummary
+      {totalBalance}
+      {projections}
+      {transactions}
+      {categories}
+    />
+
+    <!-- Getting Started Guide -->
+    {#if accounts.length === 0 && categories.length === 0}
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+        <div class="text-center">
+          <div class="text-4xl mb-4">🚀</div>
+          <h3 class="text-xl font-semibold text-blue-900 mb-3">
+            Welcome to Your Financial Tool!
+          </h3>
+          <p class="text-blue-700 mb-4">
+            Get started by setting up your accounts and categories:
+          </p>
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div class="bg-white p-4 rounded-lg border border-blue-200">
+              <div class="text-2xl mb-2">🏦</div>
+              <h4 class="font-semibold mb-1">1. Add Accounts</h4>
+              <p class="text-gray-600">
+                Create accounts for your bank, credit cards, and cash.
+              </p>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-blue-200">
+              <div class="text-2xl mb-2">📂</div>
+              <h4 class="font-semibold mb-1">2. Create Categories</h4>
+              <p class="text-gray-600">
+                Organize your income and expenses into categories.
+              </p>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-blue-200">
+              <div class="text-2xl mb-2">💸</div>
+              <h4 class="font-semibold mb-1">3. Add Transactions</h4>
+              <p class="text-gray-600">
+                Track your financial movements and see projections.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-      <!-- Accounts Section -->
-      <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-semibold mb-4">Accounts</h2>
-        <ul class="space-y-2 mb-4">
-          {#each accounts as account}
-            <li class="flex justify-between items-center">
-              <span>{account.name} ({account.type}):</span>
-              <div class="flex items-center gap-2">
-                <span class="font-medium"
-                  >${account.current_balance.toFixed(2)}</span
-                >
-                <form
-                  method="POST"
-                  action="?/deleteAccount"
-                  use:enhance
-                  class="inline"
-                >
-                  <input type="hidden" name="accountId" value={account.id} />
-                  <button
-                    type="submit"
-                    class="text-red-500 text-sm hover:underline">Delete</button
-                  >
-                </form>
-              </div>
-            </li>
-          {/each}
-        </ul>
-        <form
-          method="POST"
-          action="?/addAccount"
-          use:enhance
-          on:submit={resetAccountForm}
-        >
-          <h3 class="text-xl font-semibold mb-2">Add New Account</h3>
-          <input
-            type="text"
-            name="name"
-            placeholder="Account Name"
-            bind:value={newAccountName}
-            class="w-full p-2 border rounded mb-2"
-            required
-          />
-          <select
-            name="type"
-            bind:value={newAccountType}
-            class="w-full p-2 border rounded mb-2"
-          >
-            <option value="CHECKING">Checking</option>
-            <option value="CREDIT_CARD">Credit Card</option>
-            <option value="CASH">Cash</option>
-          </select>
-          <input
-            type="number"
-            name="initialBalance"
-            placeholder="Initial Balance"
-            bind:value={newAccountInitialBalance}
-            class="w-full p-2 border rounded mb-2"
-            step="0.01"
-            required
-          />
-          {#if newAccountType === 'CREDIT_CARD'}
-            <input
-              type="number"
-              name="creditLimit"
-              placeholder="Credit Limit"
-              bind:value={newAccountCreditLimit}
-              class="w-full p-2 border rounded mb-2"
-              step="0.01"
-            />
-            <input
-              type="number"
-              name="dueDay"
-              placeholder="Due Day (1-31)"
-              bind:value={newAccountDueDay}
-              class="w-full p-2 border rounded mb-2"
-              min="1"
-              max="31"
-            />
-          {/if}
-          <button
-            type="submit"
-            class="w-full bg-[var(--color-primary-accent)] text-white p-2 rounded hover:bg-opacity-90"
-            >Add Account</button
-          >
-        </form>
-      </div>
-
-      <!-- Categories Section -->
-      <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-semibold mb-4">Categories</h2>
-        <ul class="space-y-2 mb-4">
-          {#each categories as category}
-            <li class="flex justify-between items-center">
-              <div class="flex items-center gap-2">
-                {#if category.type === 'INCOME'}
-                  <span class="text-green-600 font-bold">↗️</span>
-                  <span class="text-green-700">{category.name}</span>
-                  <span
-                    class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
-                    >INCOME</span
-                  >
-                {:else}
-                  <span class="text-red-600 font-bold">↘️</span>
-                  <span class="text-red-700">{category.name}</span>
-                  <span
-                    class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
-                    >EXPENSE</span
-                  >
-                {/if}
-              </div>
-              <form
-                method="POST"
-                action="?/deleteCategory"
-                use:enhance
-                class="inline"
-              >
-                <input type="hidden" name="categoryId" value={category.id} />
-                <button
-                  type="submit"
-                  class="text-red-500 text-sm hover:underline">Delete</button
-                >
-              </form>
-            </li>
-          {/each}
-        </ul>
-        <form
-          method="POST"
-          action="?/addCategory"
-          use:enhance
-          on:submit={resetCategoryForm}
-        >
-          <h3 class="text-xl font-semibold mb-2">Add New Category</h3>
-          <input
-            type="text"
-            name="name"
-            placeholder="Category Name"
-            bind:value={newCategoryName}
-            class="w-full p-2 border rounded mb-2"
-            required
-          />
-          <select
-            name="type"
-            bind:value={newCategoryType}
-            class="w-full p-2 border rounded mb-2"
-          >
-            <option value="EXPENSE">Expense</option>
-            <option value="INCOME">Income</option>
-          </select>
-          <button
-            type="submit"
-            class="w-full bg-[var(--color-primary-accent)] text-white p-2 rounded hover:bg-opacity-90"
-            >Add Category</button
-          >
-        </form>
-      </div>
-
-      <!-- Add Transaction Section -->
-      <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-semibold mb-4">Add Transaction</h2>
-        <form
-          method="POST"
-          action="?/addTransaction"
-          use:enhance
-          on:submit={resetTransactionForm}
-        >
-          <input
-            type="text"
-            name="description"
-            placeholder="Description"
-            bind:value={newTransactionDescription}
-            class="w-full p-2 border rounded mb-2"
-            required
-          />
-          <input
-            type="number"
-            name="amount"
-            placeholder="Amount"
-            bind:value={newTransactionAmount}
-            class="w-full p-2 border rounded mb-2"
-            step="0.01"
-            required
-          />
-          <input
-            type="date"
-            name="date"
-            bind:value={newTransactionDate}
-            class="w-full p-2 border rounded mb-2"
-            required
-          />
-          <select
-            name="accountId"
-            bind:value={newTransactionAccountId}
-            class="w-full p-2 border rounded mb-2"
-            required
-          >
-            <option value="">Select Account</option>
-            {#each accounts as account}
-              <option value={account.id}>{account.name}</option>
-            {/each}
-          </select>
-          <select
-            name="categoryId"
-            bind:value={newTransactionCategoryId}
-            class="w-full p-2 border rounded mb-2"
-            required
-          >
-            <option value="">Select Category</option>
-            {#each categories as category}
-              <option value={category.id}
-                >{category.name} ({category.type})</option
-              >
-            {/each}
-          </select>
-
-          <label class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              name="isRecurrent"
-              bind:checked={newTransactionIsRecurrent}
-              class="mr-2"
-            />
-            Recurrent Transaction
-          </label>
-          {#if newTransactionIsRecurrent}
-            <select
-              name="recurrenceInterval"
-              bind:value={newTransactionRecurrenceInterval}
-              class="w-full p-2 border rounded mb-2"
-            >
-              <option value="MONTHLY">Monthly</option>
-              <option value="YEARLY">Yearly</option>
-            </select>
-          {/if}
-
-          <label class="flex items-center mb-2">
-            Installment Transaction
-            <input
-              type="number"
-              name="installmentsTotal"
-              placeholder="Total Installments"
-              bind:value={newTransactionInstallmentsTotal}
-              class="ml-2 p-2 border rounded w-1/2"
-              min="1"
-            />
-          </label>
-          {#if newTransactionInstallmentsTotal}
-            <input
-              type="number"
-              name="installmentsPaid"
-              placeholder="Installments Paid"
-              bind:value={newTransactionInstallmentsPaid}
-              class="w-full p-2 border rounded mb-2"
-              min="0"
-            />
-            <input
-              type="date"
-              name="installmentStartDate"
-              bind:value={newTransactionInstallmentStartDate}
-              class="w-full p-2 border rounded mb-2"
-            />
-          {/if}
-
-          <button
-            type="submit"
-            class="w-full bg-[var(--color-primary-accent)] text-white p-2 rounded hover:bg-opacity-90"
-            >Add Transaction</button
-          >
-        </form>
-      </div>
+      <AccountForm {accounts} bind:showForm={showAccountForm} />
+      <CategoryForm {categories} bind:showForm={showCategoryForm} />
+      <TransactionForm
+        {accounts}
+        {categories}
+        bind:showForm={showTransactionForm}
+      />
     </div>
 
     <!-- Active Recurrences Section -->

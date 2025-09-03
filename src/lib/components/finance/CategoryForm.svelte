@@ -1,0 +1,147 @@
+<script lang="ts">
+  import { enhance } from '$app/forms';
+  import { slide } from 'svelte/transition';
+
+  export let categories: any[] = [];
+  export let showForm = false;
+
+  let newCategoryName = '';
+  let newCategoryType = 'EXPENSE';
+
+  function resetForm() {
+    newCategoryName = '';
+    newCategoryType = 'EXPENSE';
+    showForm = false;
+  }
+
+  function toggleForm() {
+    showForm = !showForm;
+  }
+</script>
+
+<div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-semibold flex items-center gap-2">
+      <span>📂</span>
+      Categories
+    </h2>
+    <button
+      type="button"
+      on:click={toggleForm}
+      title={showForm ? 'Close form' : 'Add new category'}
+      class="px-3 py-2 bg-[var(--color-primary-accent)] text-white rounded-lg hover:bg-opacity-90 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
+    >
+      <span class="text-xl">{showForm ? '−' : '+'}</span>
+    </button>
+  </div>
+
+  {#if categories.length === 0}
+    <div class="text-center py-8 text-gray-500">
+      <div class="text-4xl mb-2">📂</div>
+      <p>
+        No categories yet. Add your first category to organize transactions!
+      </p>
+    </div>
+  {:else}
+    <ul class="space-y-2 mb-4">
+      {#each categories as category}
+        <li
+          class="flex justify-between items-center p-3 bg-white rounded-lg border hover:shadow-sm transition-shadow"
+        >
+          <div class="flex items-center gap-3">
+            {#if category.type === 'INCOME'}
+              <span class="text-2xl">💰</span>
+              <div>
+                <span class="font-medium text-green-700">{category.name}</span>
+                <span
+                  class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full ml-2"
+                  >INCOME</span
+                >
+              </div>
+            {:else}
+              <span class="text-2xl">💸</span>
+              <div>
+                <span class="font-medium text-red-700">{category.name}</span>
+                <span
+                  class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full ml-2"
+                  >EXPENSE</span
+                >
+              </div>
+            {/if}
+          </div>
+          <form
+            method="POST"
+            action="?/deleteCategory"
+            use:enhance
+            class="inline"
+          >
+            <input type="hidden" name="categoryId" value={category.id} />
+            <button
+              type="submit"
+              class="text-red-500 text-sm hover:underline p-1">✕</button
+            >
+          </form>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+
+  {#if showForm}
+    <div transition:slide={{ duration: 300 }} class="border-t pt-4">
+      <form
+        method="POST"
+        action="?/addCategory"
+        use:enhance
+        on:submit={resetForm}
+        class="space-y-4"
+      >
+        <h3 class="text-lg font-semibold mb-3">Add New Category</h3>
+        <div>
+          <label
+            for="category-name"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Category Name</label
+          >
+          <input
+            id="category-name"
+            type="text"
+            name="name"
+            placeholder="e.g., Groceries, Salary"
+            bind:value={newCategoryName}
+            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary-accent)] focus:border-transparent"
+            required
+          />
+        </div>
+        <div>
+          <label
+            for="category-type"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Category Type</label
+          >
+          <select
+            id="category-type"
+            name="type"
+            bind:value={newCategoryType}
+            class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary-accent)] focus:border-transparent"
+          >
+            <option value="EXPENSE">💸 Expense</option>
+            <option value="INCOME">💰 Income</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            on:click={() => (showForm = false)}
+            class="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+            >Cancel</button
+          >
+          <button
+            type="submit"
+            class="flex-1 px-4 py-3 bg-[var(--color-primary-accent)] text-white rounded-lg hover:bg-opacity-90 transition-colors"
+            >Add Category</button
+          >
+        </div>
+      </form>
+    </div>
+  {/if}
+</div>
