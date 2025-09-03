@@ -188,4 +188,28 @@ describe('calculateProjections', () => {
     );
     expect(projections[1].transactions.length).toBe(3);
   });
+
+  it('should handle year transition correctly (December to January)', () => {
+    const transactions: Transaction[] = [];
+    const testDate = new Date(2025, 11, 15); // December 15, 2025
+
+    const projections = calculateProjections(
+      mockAccounts,
+      transactions,
+      3,
+      testDate
+    );
+
+    // First projection should be January 2026
+    expect(projections[0].month).toBe('January');
+    expect(projections[0].year).toBe(2026);
+
+    // Second projection should be February 2026
+    expect(projections[1].month).toBe('February');
+    expect(projections[1].year).toBe(2026);
+
+    // Third projection should be March 2026
+    expect(projections[2].month).toBe('March');
+    expect(projections[2].year).toBe(2026);
+  });
 });

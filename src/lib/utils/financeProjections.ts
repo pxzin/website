@@ -49,7 +49,8 @@ export interface ProjectionMonth {
 export function calculateProjections(
   accounts: Account[],
   transactions: Transaction[],
-  monthsToProject: number = 6
+  monthsToProject: number = 6,
+  currentDate?: Date
 ): ProjectionMonth[] {
   const projections: ProjectionMonth[] = [];
 
@@ -59,15 +60,15 @@ export function calculateProjections(
     0
   );
 
-  const today = new Date();
+  const today = currentDate || new Date();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
 
   for (let i = 0; i < monthsToProject; i++) {
     // Start projections from next month (i+1)
     const projectionMonth = currentMonth + i + 1;
-    const projectionYear = currentYear + Math.floor(projectionMonth / 12);
     const adjustedMonth = projectionMonth % 12;
+    const projectionYear = currentYear + Math.floor(projectionMonth / 12);
 
     const monthName = new Date(projectionYear, adjustedMonth).toLocaleString(
       'default',
@@ -203,7 +204,7 @@ export function calculateProjections(
 
     projections.push({
       month: monthName,
-      year: currentYear,
+      year: projectionYear,
       projected_balance: projectedBalance,
       previous_balance: previousBalance,
       balance_change: monthlyNet,
