@@ -1,4 +1,10 @@
-import { turso, createTables } from '$lib/server/turso';
+import {
+  turso,
+  createTables,
+  getRecurrenceAdjustments,
+  saveRecurrenceAdjustment,
+  deleteRecurrenceAdjustment,
+} from '$lib/server/turso';
 import { fail } from '@sveltejs/kit';
 import crypto from 'crypto';
 import {
@@ -36,10 +42,19 @@ export async function load() {
       type: row.type as string,
     }));
 
-    // Load transactions
-    const transactionsResult = await turso.execute(
-      'SELECT * FROM transactions ORDER BY date DESC'
-    );
+    // Load transactions with category and account names
+    const transactionsResult = await turso.execute(`
+      SELECT 
+        t.*,
+        c.name as category_name,
+        c.type as category_type,
+        a.name as account_name,
+        a.type as account_type
+      FROM transactions t
+      LEFT JOIN categories c ON t.category_id = c.id
+      LEFT JOIN accounts a ON t.account_id = a.id
+      ORDER BY t.date DESC
+    `);
     const transactions: Transaction[] = transactionsResult.rows.map((row) => ({
       id: row.id as string,
       description: row.description as string,
@@ -52,15 +67,30 @@ export async function load() {
       installments_total: row.installments_total as number | null,
       installments_paid: row.installments_paid as number | null,
       installment_start_date: row.installment_start_date as string | null,
+      // Add the joined names
+      category_name: row.category_name as string,
+      category_type: row.category_type as string,
+      account_name: row.account_name as string,
+      account_type: row.account_type as string,
     }));
 
-    // Calculate projections
-    const projections = calculateProjections(accounts, transactions);
+    // Load recurrence adjustments
+    const recurrenceAdjustments = await getRecurrenceAdjustments();
+
+    // Calculate projections with adjustments
+    const projections = calculateProjections(
+      accounts,
+      transactions,
+      undefined,
+      undefined,
+      recurrenceAdjustments
+    );
 
     return {
       accounts,
       categories,
       transactions,
+      recurrenceAdjustments,
       projections,
     };
   } catch (error) {
@@ -69,6 +99,7 @@ export async function load() {
       accounts: [],
       categories: [],
       transactions: [],
+      recurrenceAdjustments: [],
       projections: [],
     };
   }
@@ -664,6 +695,45 @@ export const actions = {
     } catch (error) {
       console.error('Error debugging data:', error);
       return fail(500, { error: 'Failed to debug data' });
+    }
+  },
+
+  adjustRecurrence: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+      const yearMonth = data.get('yearMonth') as string;
+      const originalAmount = parseFloat(data.get('originalAmount') as string);
+      const adjustedAmount = parseFloat(data.get('adjustedAmount') as string);
+      const reason = data.get('reason') as string;
+
+      await saveRecurrenceAdjustment(
+        transactionId,
+        yearMonth,
+        originalAmount,
+        adjustedAmount,
+        reason
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error adjusting recurrence:', error);
+      return fail(500, { error: 'Failed to adjust recurrence' });
+    }
+  },
+
+  removeRecurrenceAdjustment: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+      const yearMonth = data.get('yearMonth') as string;
+
+      await deleteRecurrenceAdjustment(transactionId, yearMonth);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error removing recurrence adjustment:', error);
+      return fail(500, { error: 'Failed to remove adjustment' });
     }
   },
 };

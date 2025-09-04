@@ -53,12 +53,27 @@ export const createTables = async () => {
       );
     `;
 
+  const createRecurrenceAdjustmentsTableQuery = `
+      CREATE TABLE IF NOT EXISTS recurrence_adjustments (
+        id TEXT PRIMARY KEY,
+        transaction_id TEXT NOT NULL,
+        year_month TEXT NOT NULL,
+        original_amount REAL NOT NULL,
+        adjusted_amount REAL NOT NULL,
+        reason TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (transaction_id) REFERENCES transactions (id) ON DELETE CASCADE,
+        UNIQUE (transaction_id, year_month)
+      );
+    `;
+
   try {
     await turso.batch([
       { sql: createTableQuery, args: [] },
       { sql: createAccountsTableQuery, args: [] },
       { sql: createCategoriesTableQuery, args: [] },
       { sql: createTransactionsTableQuery, args: [] },
+      { sql: createRecurrenceAdjustmentsTableQuery, args: [] },
     ]);
 
     // Skip migration for now to avoid conflicts
@@ -203,5 +218,78 @@ const migrateAccountTypes = async () => {
       // Ignore error when re-enabling
     }
     // Migration failed, but app can continue with existing table
+  }
+};
+
+// Functions for managing recurrence adjustments
+
+export const saveRecurrenceAdjustment = async (
+  transactionId: string,
+  yearMonth: string,
+  originalAmount: number,
+  adjustedAmount: number,
+  reason?: string
+) => {
+  try {
+    const id = crypto.randomUUID();
+    await turso.execute({
+      sql: `INSERT OR REPLACE INTO recurrence_adjustments 
+            (id, transaction_id, year_month, original_amount, adjusted_amount, reason)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [
+        id,
+        transactionId,
+        yearMonth,
+        originalAmount,
+        adjustedAmount,
+        reason || '',
+      ],
+    });
+  } catch (error) {
+    console.error('Error saving recurrence adjustment:', error);
+    throw error;
+  }
+};
+
+export const getRecurrenceAdjustments = async () => {
+  try {
+    const result = await turso.execute(
+      'SELECT * FROM recurrence_adjustments ORDER BY year_month DESC'
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching recurrence adjustments:', error);
+    return [];
+  }
+};
+
+export const getRecurrenceAdjustment = async (
+  transactionId: string,
+  yearMonth: string
+) => {
+  try {
+    const result = await turso.execute({
+      sql: 'SELECT * FROM recurrence_adjustments WHERE transaction_id = ? AND year_month = ?',
+      args: [transactionId, yearMonth],
+    });
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('Error fetching recurrence adjustment:', error);
+    return null;
+  }
+};
+
+export const deleteRecurrenceAdjustment = async (
+  transactionId: string,
+  yearMonth: string
+) => {
+  try {
+    await turso.execute({
+      sql: 'DELETE FROM recurrence_adjustments WHERE transaction_id = ? AND year_month = ?',
+      args: [transactionId, yearMonth],
+    });
+  } catch (error) {
+    console.error('Error removing recurrence adjustment:', error);
+    throw error;
   }
 };

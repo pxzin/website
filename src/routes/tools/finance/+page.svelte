@@ -10,6 +10,7 @@
     InstallmentDetails,
     FormDrawer,
   } from '$lib/components';
+  import RecurrenceAdjustments from '$lib/components/finance/RecurrenceAdjustments.svelte';
   import {
     showError,
     showSuccess,
@@ -22,6 +23,7 @@
   $: categories = data.categories;
   $: transactions = data.transactions;
   $: projections = data.projections;
+  $: recurrenceAdjustments = data.recurrenceAdjustments;
 
   $: totalBalance = accounts.reduce((sum, acc) => sum + acc.current_balance, 0);
 
@@ -982,6 +984,9 @@
       onRefreshProjections={refreshProjections}
       onDebugData={debugData}
     />
+
+    <!-- Recurrence Adjustments Section -->
+    <RecurrenceAdjustments {projections} {recurrenceAdjustments} />
   </div>
 </section>
 

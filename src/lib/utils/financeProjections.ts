@@ -29,6 +29,16 @@ export interface Transaction {
   installments_paid: number | null;
   installment_start_date: string | null;
   installment_number?: number; // Added for projections
+  // Optional fields for adjustment tracking
+  hasAdjustment?: boolean;
+  originalAmount?: number;
+  adjustmentReason?: string | null;
+  originalTransactionId?: string; // Keep original ID for adjustments
+  // Names from JOINs
+  category_name?: string;
+  category_type?: string;
+  account_name?: string;
+  account_type?: string;
 }
 
 export interface ProjectionMonth {
@@ -91,10 +101,12 @@ export function calculateProjections(
   accounts: Account[],
   transactions: Transaction[],
   monthsToProject?: number,
-  currentDate?: Date
+  currentDate?: Date,
+  recurrenceAdjustments?: any[]
 ): ProjectionMonth[] {
   const projections: ProjectionMonth[] = [];
   const today = currentDate || new Date();
+  const adjustments = recurrenceAdjustments || [];
 
   // Calculate optimal projection months if not provided
   const optimalMonths =
@@ -151,9 +163,25 @@ export function calculateProjections(
         }
 
         if (shouldInclude) {
+          // Check for recurrence adjustment for this month
+          const yearMonth = `${projectionYear}-${String(
+            adjustedMonth + 1
+          ).padStart(2, '0')}`;
+          const adjustment = adjustments.find(
+            (adj: any) =>
+              adj.transaction_id === tx.id && adj.year_month === yearMonth
+          );
+
+          // Use adjusted amount if available, otherwise use original amount
+          const finalAmount = adjustment
+            ? adjustment.adjusted_amount
+            : tx.amount;
+
           const recurrentTx: Transaction = {
             ...tx,
             id: crypto.randomUUID(),
+            originalTransactionId: tx.id, // Keep original ID for adjustments
+            amount: finalAmount,
             date: new Date(
               projectionYear,
               adjustedMonth,
@@ -162,6 +190,15 @@ export function calculateProjections(
               .toISOString()
               .split('T')[0],
             is_recurrent: true, // Ensure this flag is maintained
+            // Add adjustment metadata for tracking
+            hasAdjustment: !!adjustment,
+            originalAmount: tx.amount,
+            adjustmentReason: adjustment?.reason || null,
+            // Preserve category and account names
+            category_name: tx.category_name,
+            category_type: tx.category_type,
+            account_name: tx.account_name,
+            account_type: tx.account_type,
           };
           monthTransactions.push(recurrentTx);
         }
