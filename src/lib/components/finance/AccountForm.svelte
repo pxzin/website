@@ -91,8 +91,15 @@
             class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary-accent)] focus:border-transparent"
           >
             <option value="CHECKING">🏦 Checking Account</option>
+            <option value="SAVINGS">🏛️ Savings Account</option>
             <option value="CREDIT_CARD">💳 Credit Card</option>
+            <option value="INVESTMENT">📈 Investment Account</option>
+            <option value="BUSINESS">🏢 Business Account</option>
             <option value="CASH">💰 Cash</option>
+            <option value="CRYPTO">₿ Cryptocurrency</option>
+            <option value="LOAN">🏠 Loan Account</option>
+            <option value="PENSION">🎯 Pension/Retirement</option>
+            <option value="OTHER">📋 Other</option>
           </select>
         </div>
         <div>
@@ -184,10 +191,24 @@
             <div class="text-2xl">
               {#if account.type === 'CHECKING'}
                 🏦
+              {:else if account.type === 'SAVINGS'}
+                🏛️
               {:else if account.type === 'CREDIT_CARD'}
                 💳
+              {:else if account.type === 'INVESTMENT'}
+                �
+              {:else if account.type === 'BUSINESS'}
+                🏢
+              {:else if account.type === 'CASH'}
+                �💰
+              {:else if account.type === 'CRYPTO'}
+                ₿
+              {:else if account.type === 'LOAN'}
+                🏠
+              {:else if account.type === 'PENSION'}
+                🎯
               {:else}
-                💰
+                📋
               {/if}
             </div>
             <div>

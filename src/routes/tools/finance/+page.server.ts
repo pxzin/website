@@ -621,4 +621,49 @@ export const actions = {
       return fail(500, { error: 'Failed to import backup' });
     }
   },
+
+  refreshProjections: async () => {
+    try {
+      // Just return success - the projections will be recalculated on page reload via invalidateAll()
+      return {
+        success: true,
+        message: 'Projections refreshed successfully!',
+      };
+    } catch (error) {
+      console.error('Error refreshing projections:', error);
+      return fail(500, { error: 'Failed to refresh projections' });
+    }
+  },
+
+  debugData: async () => {
+    try {
+      // Check current data in database
+      const accountsResult = await turso.execute(
+        'SELECT COUNT(*) as count FROM accounts'
+      );
+      const transactionsResult = await turso.execute(
+        'SELECT COUNT(*) as count FROM transactions'
+      );
+      const categoriesResult = await turso.execute(
+        'SELECT COUNT(*) as count FROM categories'
+      );
+
+      const accountsCount = accountsResult.rows[0]?.count || 0;
+      const transactionsCount = transactionsResult.rows[0]?.count || 0;
+      const categoriesCount = categoriesResult.rows[0]?.count || 0;
+
+      return {
+        success: true,
+        message: `Debug: ${accountsCount} accounts, ${transactionsCount} transactions, ${categoriesCount} categories`,
+        counts: {
+          accounts: accountsCount,
+          transactions: transactionsCount,
+          categories: categoriesCount,
+        },
+      };
+    } catch (error) {
+      console.error('Error debugging data:', error);
+      return fail(500, { error: 'Failed to debug data' });
+    }
+  },
 };

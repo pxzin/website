@@ -41,6 +41,9 @@
   let showFormDrawer = false;
   let activeForm = 'account'; // 'account', 'category', or 'transaction'
 
+  // FAB (Floating Action Button) state
+  let showFABMenu = false;
+
   // Form visibility states (kept for FormDrawer)
   let showAccountForm = false;
   let showCategoryForm = false;
@@ -154,6 +157,30 @@
     showTransactionForm = false;
   }
 
+  // FAB (Floating Action Button) functions
+  function toggleFABMenu() {
+    showFABMenu = !showFABMenu;
+  }
+
+  function openFormDrawerFromFAB(
+    formType: 'account' | 'category' | 'transaction'
+  ) {
+    showFABMenu = false; // Close FAB menu
+    openFormDrawer(formType);
+  }
+
+  function closeFABMenu() {
+    showFABMenu = false;
+  }
+
+  // Close FAB menu when clicking outside
+  function handleDocumentClick(event: MouseEvent) {
+    const target = event.target as Element;
+    if (!target.closest('.fab-container')) {
+      closeFABMenu();
+    }
+  }
+
   // Helper function for delete transaction enhance
   function deleteTransactionEnhance() {
     return ({ formData }) => {
@@ -166,6 +193,53 @@
         }
       };
     };
+  }
+
+  // Refresh projections function
+  async function refreshProjections() {
+    try {
+      const formData = new FormData();
+      const response = await fetch('?/refreshProjections', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        showSuccess('Projections refreshed successfully!');
+        await invalidateAll();
+      } else {
+        showError('Failed to refresh projections');
+      }
+    } catch (error) {
+      console.error('Error refreshing projections:', error);
+      showError('Failed to refresh projections');
+    }
+  }
+
+  // Debug data function
+  async function debugData() {
+    try {
+      const formData = new FormData();
+      const response = await fetch('?/debugData', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.type === 'success') {
+          showInfo(result.data.message);
+          console.log('Debug data:', result.data.counts);
+        } else {
+          showError('Failed to debug data');
+        }
+      } else {
+        showError('Failed to debug data');
+      }
+    } catch (error) {
+      console.error('Error debugging data:', error);
+      showError('Failed to debug data');
+    }
   }
 
   // Backup functions
@@ -295,6 +369,9 @@
   }
 </script>
 
+<!-- Global event listeners -->
+<svelte:window on:click={handleDocumentClick} />
+
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">
   <div class="max-w-6xl mx-auto px-4">
     <div class="flex justify-between items-center mb-8">
@@ -354,41 +431,6 @@
         </div>
       </div>
     {/if}
-
-    <!-- Quick Actions Section -->
-    <div
-      class="bg-blue-50 p-6 rounded-lg shadow-md mb-8 border-l-4 border-blue-500"
-    >
-      <h2 class="text-2xl font-semibold mb-4 text-blue-800">
-        ⚡ Quick Actions
-      </h2>
-      <p class="text-blue-700 mb-4">
-        Manage your accounts, categories, and transactions with ease.
-      </p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button
-          on:click={() => openFormDrawer('account')}
-          class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-        >
-          <span>🏦</span>
-          Add Account
-        </button>
-        <button
-          on:click={() => openFormDrawer('category')}
-          class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-        >
-          <span>🏷️</span>
-          Add Category
-        </button>
-        <button
-          on:click={() => openFormDrawer('transaction')}
-          class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-        >
-          <span>💰</span>
-          Add Transaction
-        </button>
-      </div>
-    </div>
 
     <!-- Backup & Data Management Section -->
     <div
@@ -937,9 +979,81 @@
       {projections}
       {getCategoryType}
       {formatRecurrenceInterval}
+      onRefreshProjections={refreshProjections}
+      onDebugData={debugData}
     />
   </div>
 </section>
+
+<!-- Floating Action Button -->
+<!-- Subtle backdrop when FAB menu is open -->
+{#if showFABMenu}
+  <div
+    class="fixed inset-0 z-20 bg-black/10 backdrop-blur-sm transition-all duration-300"
+  ></div>
+{/if}
+
+<div class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-30 fab-container">
+  <!-- FAB Menu Options -->
+  {#if showFABMenu}
+    <div
+      class="absolute bottom-16 right-0 space-y-3 transition-all duration-300 transform"
+    >
+      <!-- Add Transaction -->
+      <div class="animate-in slide-in-from-right-5 duration-300 delay-0">
+        <button
+          on:click={() => openFormDrawerFromFAB('transaction')}
+          class="flex items-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        >
+          <span class="mr-2">💰</span>
+          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
+            >Add Transaction</span
+          >
+        </button>
+      </div>
+
+      <!-- Add Category -->
+      <div class="animate-in slide-in-from-right-5 duration-300 delay-75">
+        <button
+          on:click={() => openFormDrawerFromFAB('category')}
+          class="flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        >
+          <span class="mr-2">🏷️</span>
+          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
+            >Add Category</span
+          >
+        </button>
+      </div>
+
+      <!-- Add Account -->
+      <div class="animate-in slide-in-from-right-5 duration-300 delay-150">
+        <button
+          on:click={() => openFormDrawerFromFAB('account')}
+          class="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        >
+          <span class="mr-2">🏦</span>
+          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
+            >Add Account</span
+          >
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Main FAB Button -->
+  <button
+    on:click={toggleFABMenu}
+    class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group transform hover:scale-110"
+    aria-label="Quick Actions"
+  >
+    <span
+      class="text-xl md:text-2xl transition-transform duration-300"
+      class:rotate-45={showFABMenu}
+    >
+      {showFABMenu ? '✕' : '+'}
+    </span>
+  </button>
+</div>
 
 <!-- Form Drawer -->
 <FormDrawer bind:show={showFormDrawer} on:close={closeFormDrawer}>

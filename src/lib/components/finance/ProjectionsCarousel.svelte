@@ -5,6 +5,9 @@
   export let projections: any[];
   export let getCategoryType: (categoryId: string) => string;
   export let formatRecurrenceInterval: (interval: string) => string;
+  export let onRefreshProjections: (() => Promise<void>) | undefined =
+    undefined;
+  export let onDebugData: (() => Promise<void>) | undefined = undefined;
 
   let currentIndex = 0;
   const itemsPerView = 2;
@@ -37,7 +40,53 @@
 </script>
 
 <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md">
-  <h2 class="text-2xl font-semibold mb-4">Projections</h2>
+  <div class="flex justify-between items-center mb-4">
+    <div>
+      <h2 class="text-2xl font-semibold">📊 Projections</h2>
+      <p class="text-sm text-gray-600 mt-1">
+        {projections.length} months projected • Based on current accounts & transactions
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-2">
+      <!-- Debug Button (temporary) -->
+      {#if onDebugData}
+        <button
+          type="button"
+          on:click={onDebugData}
+          class="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow-md"
+          title="Debug current data"
+        >
+          🐛 Debug
+        </button>
+      {/if}
+
+      <!-- Refresh Projections Button -->
+      <button
+        type="button"
+        on:click={onRefreshProjections}
+        disabled={!onRefreshProjections}
+        class="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow-md"
+        title="Recalculate projections based on current data"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
 
   {#if projections.length > 0}
     <div
@@ -132,8 +181,22 @@
       {/if}
     </div>
   {:else}
-    <div class="text-center text-gray-500 italic p-8">
-      No projections available. Add some transactions to see projections.
+    <div
+      class="text-center text-gray-500 p-8 border-2 border-dashed border-gray-200 rounded-lg"
+    >
+      <div class="text-6xl mb-4">📊</div>
+      <h3 class="text-lg font-medium text-gray-700 mb-2">
+        No Projections Available
+      </h3>
+      <p class="text-sm mb-4">
+        Projections are calculated based on your accounts and transactions.
+      </p>
+      <div class="text-xs text-gray-600 space-y-1">
+        <p>• Add accounts to set starting balances</p>
+        <p>• Add recurring transactions for monthly projections</p>
+        <p>• Add installment transactions for future commitments</p>
+        <p>• Use the refresh button if you added data recently</p>
+      </div>
     </div>
   {/if}
 </div>
