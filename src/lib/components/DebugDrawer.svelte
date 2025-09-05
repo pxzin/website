@@ -85,7 +85,7 @@
       for (const category of testCategories) {
         const formData = new FormData();
         formData.append('name', category.name);
-        formData.append('type', category.type);
+        // Note: type is no longer sent as it's not needed
 
         const response = await fetch('/tools/finance?/addCategory', {
           method: 'POST',
@@ -211,6 +211,10 @@
           formData.append('date', transaction.date);
           formData.append('accountName', transaction.accountName);
           formData.append('categoryName', transaction.categoryName);
+
+          // Add transaction type based on amount (positive = income, negative = expense)
+          const transactionType = transaction.amount > 0 ? 'income' : 'expense';
+          formData.append('type', transactionType);
 
           if (transaction.isRecurrent) {
             formData.append('isRecurrent', 'true');
@@ -390,7 +394,7 @@
       for (const category of testCategories) {
         const formData = new FormData();
         formData.append('name', category.name);
-        formData.append('type', category.type);
+        // Note: type is no longer sent as it's not needed
 
         await fetch('/tools/finance?/addCategory', {
           method: 'POST',
@@ -473,6 +477,10 @@
         formData.append('date', transaction.date);
         formData.append('accountName', transaction.accountName);
         formData.append('categoryName', transaction.categoryName);
+
+        // Add transaction type based on amount (positive = income, negative = expense)
+        const transactionType = transaction.amount > 0 ? 'income' : 'expense';
+        formData.append('type', transactionType);
 
         if (transaction.isRecurrent) {
           formData.append('isRecurrent', 'true');

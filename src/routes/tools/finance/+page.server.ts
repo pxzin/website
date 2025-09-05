@@ -40,14 +40,14 @@ export async function load() {
       id: row.id as string,
       name: row.name as string,
       type: row.type as string,
+      icon: row.icon as string,
     }));
 
-    // Load transactions with category and account names
+    // Load transactions with category and account names - optimized query
     const transactionsResult = await turso.execute(`
       SELECT 
         t.*,
         c.name as category_name,
-        c.type as category_type,
         a.name as account_name,
         a.type as account_type
       FROM transactions t
@@ -62,7 +62,7 @@ export async function load() {
       date: row.date as string,
       account_id: row.account_id as string,
       category_id: row.category_id as string,
-      type: row.type as string || 'expense', // Use transaction type, fallback to expense for compatibility
+      type: (row.type as string) || 'expense', // Use transaction type directly
       is_recurrent: Boolean(row.is_recurrent),
       recurrence_interval: row.recurrence_interval as string | null,
       installments_total: row.installments_total as number | null,
@@ -70,7 +70,6 @@ export async function load() {
       installment_start_date: row.installment_start_date as string | null,
       // Add the joined names
       category_name: row.category_name as string,
-      category_type: row.category_type as string,
       account_name: row.account_name as string,
       account_type: row.account_type as string,
     }));
@@ -149,16 +148,18 @@ export const actions = {
     try {
       const data = await request.formData();
       const name = data.get('name') as string;
-      const type = data.get('type') as string;
+      const icon = (data.get('icon') as string) || '📁';
 
-      if (!name || !type) {
-        return fail(400, { error: 'Invalid category data' });
+      if (!name) {
+        return fail(400, { error: 'Category name is required' });
       }
 
       const id = crypto.randomUUID();
+      // Note: We still insert type as 'EXPENSE' for backward compatibility
+      // but this field is no longer used by the application
       await turso.execute({
-        sql: 'INSERT INTO categories (id, name, type) VALUES (?, ?, ?)',
-        args: [id, name, type],
+        sql: 'INSERT INTO categories (id, name, type, icon) VALUES (?, ?, ?, ?)',
+        args: [id, name, 'EXPENSE', icon], // Default type for compatibility
       });
 
       return { success: true };
@@ -189,13 +190,22 @@ export const actions = {
       const installmentStartDate =
         (data.get('installmentStartDate') as string) || null;
 
-      if (!description || isNaN(amount) || !date || !accountId || !categoryId || !type) {
+      if (
+        !description ||
+        isNaN(amount) ||
+        !date ||
+        !accountId ||
+        !categoryId ||
+        !type
+      ) {
         return fail(400, { error: 'Invalid transaction data' });
       }
 
       // Validate type
       if (type !== 'income' && type !== 'expense') {
-        return fail(400, { error: 'Transaction type must be income or expense' });
+        return fail(400, {
+          error: 'Transaction type must be income or expense',
+        });
       }
 
       // If transaction is expense, make amount negative (unless it's already negative)
@@ -443,6 +453,7 @@ export const actions = {
       const date = data.get('date') as string;
       const accountName = data.get('accountName') as string;
       const categoryName = data.get('categoryName') as string;
+      const type = data.get('type') as string; // Get type directly
       const isRecurrent = data.get('isRecurrent') === 'true';
       const recurrenceInterval =
         (data.get('recurrenceInterval') as string) || null;
@@ -460,9 +471,17 @@ export const actions = {
         isNaN(amount) ||
         !date ||
         !accountName ||
-        !categoryName
+        !categoryName ||
+        !type
       ) {
         return fail(400, { error: 'Invalid transaction data' });
+      }
+
+      // Validate type
+      if (type !== 'income' && type !== 'expense') {
+        return fail(400, {
+          error: 'Transaction type must be income or expense',
+        });
       }
 
       // Find account by name
@@ -477,9 +496,9 @@ export const actions = {
 
       const accountId = accountResult.rows[0].id as string;
 
-      // Find category by name
+      // Find category by name (simplified - no need for type)
       const categoryResult = await turso.execute({
-        sql: 'SELECT id, type FROM categories WHERE name = ?',
+        sql: 'SELECT id FROM categories WHERE name = ?',
         args: [categoryName],
       });
 
@@ -488,13 +507,9 @@ export const actions = {
       }
 
       const categoryId = categoryResult.rows[0].id as string;
-      const categoryType = categoryResult.rows[0].type as string;
-
-      // Convert category type to transaction type format
-      const transactionType = categoryType === 'EXPENSE' ? 'expense' : 'income';
 
       // If transaction is expense, make amount negative (unless it's already negative)
-      if (transactionType === 'expense' && amount > 0) {
+      if (type === 'expense' && amount > 0) {
         amount = -amount;
       }
 
@@ -511,7 +526,7 @@ export const actions = {
           date,
           accountId,
           categoryId,
-          transactionType,
+          type,
           isRecurrent ? 1 : 0,
           recurrenceInterval,
           installmentsTotal,

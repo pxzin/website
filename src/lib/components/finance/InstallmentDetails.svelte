@@ -1,6 +1,5 @@
 <script lang="ts">
   export let transaction: any;
-  export let categoryType: 'INCOME' | 'EXPENSE';
 
   function getInstallmentValues(transaction: any) {
     if (!transaction.installments_total) return null;
@@ -52,7 +51,7 @@
       <div class="text-left">
         <div class="text-gray-500">Valor/parcela:</div>
         <div class="font-medium">
-          {#if categoryType === 'EXPENSE'}
+          {#if transaction.type === 'expense'}
             ${installmentValues.installmentValue.toFixed(2)}
           {:else}
             +${installmentValues.installmentValue.toFixed(2)}

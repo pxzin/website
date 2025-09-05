@@ -3,7 +3,6 @@
   import { quintOut } from 'svelte/easing';
 
   export let projection: any;
-  export let getCategoryType: (categoryId: string) => string;
   export let formatRecurrenceInterval: (interval: string) => string;
 
   // Calculate percentage change from previous month
@@ -194,7 +193,7 @@
             in:fly={{ y: 20, duration: 300, delay: i * 50 }}
           >
             <div class="flex items-center flex-1 min-w-0">
-              {#if getCategoryType(tx.category_id) === 'INCOME'}
+              {#if tx.type === 'income'}
                 <div
                   class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2 flex-shrink-0"
                 >
@@ -254,12 +253,10 @@
             <div class="text-right ml-2">
               <p
                 class="text-xs font-bold"
-                class:text-green-600={getCategoryType(tx.category_id) ===
-                  'INCOME'}
-                class:text-red-600={getCategoryType(tx.category_id) ===
-                  'EXPENSE'}
+                class:text-green-600={tx.type === 'INCOME'}
+                class:text-red-600={tx.type === 'EXPENSE'}
               >
-                {#if getCategoryType(tx.category_id) === 'EXPENSE'}
+                {#if tx.type === 'expense'}
                   -${Math.abs(tx.amount).toFixed(2)}
                 {:else}
                   +${tx.amount.toFixed(2)}

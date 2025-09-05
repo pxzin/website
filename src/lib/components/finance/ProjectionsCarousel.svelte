@@ -3,7 +3,6 @@
   import ProjectionCard from './ProjectionCard.svelte';
 
   export let projections: any[];
-  export let getCategoryType: (categoryId: string) => string;
   export let formatRecurrenceInterval: (interval: string) => string;
   export let onRefreshProjections: (() => Promise<void>) | undefined =
     undefined;
@@ -146,11 +145,7 @@
             <div class="flex-shrink-0 w-full grid grid-cols-2 gap-4">
               {#each projections.slice(pageIndex * itemsPerView, (pageIndex + 1) * itemsPerView) as projection}
                 <div class="h-full">
-                  <ProjectionCard
-                    {projection}
-                    {getCategoryType}
-                    {formatRecurrenceInterval}
-                  />
+                  <ProjectionCard {projection} {formatRecurrenceInterval} />
                 </div>
               {/each}
               {#if projections.slice(pageIndex * itemsPerView, (pageIndex + 1) * itemsPerView).length === 1}
