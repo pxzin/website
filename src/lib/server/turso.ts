@@ -43,6 +43,7 @@ export const createTables = async () => {
         date TEXT NOT NULL,
         account_id TEXT NOT NULL,
         category_id TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
         is_recurrent INTEGER DEFAULT 0,
         recurrence_interval TEXT CHECK(recurrence_interval IN ('MONTHLY', 'YEARLY')),
         installments_total INTEGER,

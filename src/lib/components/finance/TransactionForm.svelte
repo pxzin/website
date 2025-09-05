@@ -14,6 +14,7 @@
   let newTransactionDate = new Date().toISOString().split('T')[0];
   let newTransactionAccountId = '';
   let newTransactionCategoryId = '';
+  let newTransactionType = ''; // New field for transaction type
   let newTransactionIsRecurrent = false;
   let newTransactionRecurrenceInterval = 'MONTHLY';
   let newTransactionInstallmentsTotal: number | null = null;
@@ -24,20 +25,21 @@
   $: selectedCategory = categories.find(
     (cat) => cat.id === newTransactionCategoryId
   );
-  $: isExpense = selectedCategory?.type === 'EXPENSE';
-  $: isIncome = selectedCategory?.type === 'INCOME';
+  $: isExpense = newTransactionType === 'expense';
+  $: isIncome = newTransactionType === 'income';
   $: selectedAccount = accounts.find(
     (acc) => acc.id === newTransactionAccountId
   );
   $: showInstallmentFields =
     newTransactionInstallmentsTotal && newTransactionInstallmentsTotal > 1;
 
-  // Form validation
+  // Form validation - now includes type
   $: isFormValid =
     newTransactionDescription.trim() !== '' &&
     newTransactionAmount !== 0 &&
     newTransactionAccountId !== '' &&
-    newTransactionCategoryId !== '';
+    newTransactionCategoryId !== '' &&
+    newTransactionType !== '';
 
   // Checkbox state for installments
   let isInstallmentTransaction = false;
@@ -96,6 +98,7 @@
       newTransactionCategoryId = '';
     }
 
+    newTransactionType = ''; // Reset transaction type
     newTransactionIsRecurrent = false;
     newTransactionRecurrenceInterval = 'MONTHLY';
     newTransactionInstallmentsTotal = null;
@@ -157,6 +160,9 @@
   function applyTemplate(template: (typeof templates)[0]) {
     newTransactionDescription = template.name;
     newTransactionAmount = template.amount;
+    
+    // Set transaction type based on template
+    newTransactionType = template.type === 'INCOME' ? 'income' : 'expense';
 
     // Find matching category by name
     const matchingCategory = categories.find(
@@ -538,6 +544,26 @@
                   {category.name}</option
                 >
               {/each}
+            </select>
+          </div>
+
+          <!-- Transaction Type -->
+          <div>
+            <label
+              for="transaction-type"
+              class="block text-sm font-medium text-gray-700 mb-2"
+              >Transaction Type</label
+            >
+            <select
+              id="transaction-type"
+              name="type"
+              bind:value={newTransactionType}
+              class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary-accent)] focus:border-transparent transition-all duration-200"
+              required
+            >
+              <option value="">💱 Select Type</option>
+              <option value="income">💰 Income</option>
+              <option value="expense">💸 Expense</option>
             </select>
           </div>
         </div>

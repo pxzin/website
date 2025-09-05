@@ -23,6 +23,7 @@ export interface Transaction {
   date: string;
   account_id: string;
   category_id: string;
+  type: string; // 'income' or 'expense'
   is_recurrent: boolean;
   recurrence_interval: string | null;
   installments_total: number | null;

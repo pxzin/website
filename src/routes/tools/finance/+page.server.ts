@@ -62,6 +62,7 @@ export async function load() {
       date: row.date as string,
       account_id: row.account_id as string,
       category_id: row.category_id as string,
+      type: row.type as string || 'expense', // Use transaction type, fallback to expense for compatibility
       is_recurrent: Boolean(row.is_recurrent),
       recurrence_interval: row.recurrence_interval as string | null,
       installments_total: row.installments_total as number | null,
@@ -175,6 +176,7 @@ export const actions = {
       const date = data.get('date') as string;
       const accountId = data.get('accountId') as string;
       const categoryId = data.get('categoryId') as string;
+      const type = data.get('type') as string; // Get type directly from form
       const isRecurrent = data.get('isRecurrent') === 'on';
       const recurrenceInterval =
         (data.get('recurrenceInterval') as string) || null;
@@ -187,33 +189,26 @@ export const actions = {
       const installmentStartDate =
         (data.get('installmentStartDate') as string) || null;
 
-      if (!description || isNaN(amount) || !date || !accountId || !categoryId) {
+      if (!description || isNaN(amount) || !date || !accountId || !categoryId || !type) {
         return fail(400, { error: 'Invalid transaction data' });
       }
 
-      // Get category to check if it's EXPENSE type
-      const categoryResult = await turso.execute({
-        sql: 'SELECT type FROM categories WHERE id = ?',
-        args: [categoryId],
-      });
-
-      if (categoryResult.rows.length === 0) {
-        return fail(400, { error: 'Category not found' });
+      // Validate type
+      if (type !== 'income' && type !== 'expense') {
+        return fail(400, { error: 'Transaction type must be income or expense' });
       }
 
-      const categoryType = categoryResult.rows[0].type as string;
-
-      // If category is EXPENSE, make amount negative (unless it's already negative)
-      if (categoryType === 'EXPENSE' && amount > 0) {
+      // If transaction is expense, make amount negative (unless it's already negative)
+      if (type === 'expense' && amount > 0) {
         amount = -amount;
       }
 
       const id = crypto.randomUUID();
 
-      // Add transaction (store the total amount for reference)
+      // Add transaction with type field
       await turso.execute({
-        sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
-				      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, type, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
+				      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           id,
           description,
@@ -221,6 +216,7 @@ export const actions = {
           date,
           accountId,
           categoryId,
+          type,
           isRecurrent ? 1 : 0,
           recurrenceInterval,
           installmentsTotal,
@@ -494,17 +490,20 @@ export const actions = {
       const categoryId = categoryResult.rows[0].id as string;
       const categoryType = categoryResult.rows[0].type as string;
 
-      // If category is EXPENSE, make amount negative (unless it's already negative)
-      if (categoryType === 'EXPENSE' && amount > 0) {
+      // Convert category type to transaction type format
+      const transactionType = categoryType === 'EXPENSE' ? 'expense' : 'income';
+
+      // If transaction is expense, make amount negative (unless it's already negative)
+      if (transactionType === 'expense' && amount > 0) {
         amount = -amount;
       }
 
       const id = crypto.randomUUID();
 
-      // Add transaction (store the total amount for reference)
+      // Add transaction with type field
       await turso.execute({
-        sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, type, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           id,
           description,
@@ -512,6 +511,7 @@ export const actions = {
           date,
           accountId,
           categoryId,
+          transactionType,
           isRecurrent ? 1 : 0,
           recurrenceInterval,
           installmentsTotal,
