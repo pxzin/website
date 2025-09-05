@@ -751,4 +751,46 @@ export const actions = {
       return fail(500, { error: 'Failed to remove adjustment' });
     }
   },
+
+  interruptRecurrence: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+      const interruptionMonth = data.get('interruptionMonth') as string;
+      const originalAmount = parseFloat(data.get('originalAmount') as string);
+
+      // Save interruption as a special adjustment with amount = 0
+      await saveRecurrenceAdjustment(
+        transactionId,
+        interruptionMonth,
+        originalAmount,
+        0, // amount = 0 indicates interruption
+        'RECURRENCE_INTERRUPTION' // special reason to identify interruptions
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error interrupting recurrence:', error);
+      return fail(500, { error: 'Failed to interrupt recurrence' });
+    }
+  },
+
+  resumeRecurrence: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+
+      // Find and remove all interruption adjustments for this transaction
+      await turso.execute({
+        sql: `DELETE FROM recurrence_adjustments 
+              WHERE transaction_id = ? AND reason = 'RECURRENCE_INTERRUPTION'`,
+        args: [transactionId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error resuming recurrence:', error);
+      return fail(500, { error: 'Failed to resume recurrence' });
+    }
+  },
 };

@@ -8,6 +8,7 @@
     FormDrawer,
   } from '$lib/components';
   import RecurrenceAdjustments from '$lib/components/finance/RecurrenceAdjustments.svelte';
+  import RecurrenceInterruptions from '$lib/components/finance/RecurrenceInterruptions.svelte';
   // Import new page components
   import FinancePageHeader from '$lib/components/finance/page/FinancePageHeader.svelte';
   import GettingStartedGuide from '$lib/components/finance/page/GettingStartedGuide.svelte';
@@ -193,6 +194,9 @@
 
     <!-- Recurrence Adjustments Section -->
     <RecurrenceAdjustments {projections} {recurrenceAdjustments} />
+
+    <!-- Recurrence Interruptions Section -->
+    <RecurrenceInterruptions {recurrentTransactions} {recurrenceAdjustments} />
   </div>
 </section>
 

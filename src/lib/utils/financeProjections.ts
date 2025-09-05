@@ -173,10 +173,31 @@ export function calculateProjections(
               adj.transaction_id === tx.id && adj.year_month === yearMonth
           );
 
+          // Check if recurrence is interrupted from this month or earlier
+          const interruptionAdjustment = adjustments.find(
+            (adj: any) =>
+              adj.transaction_id === tx.id &&
+              adj.reason === 'RECURRENCE_INTERRUPTION' &&
+              adj.year_month <= yearMonth
+          );
+
+          // Skip this transaction if it's interrupted
+          if (interruptionAdjustment) {
+            return; // Don't include this transaction in projections
+          }
+
           // Use adjusted amount if available, otherwise use original amount
           const finalAmount = adjustment
             ? adjustment.adjusted_amount
             : tx.amount;
+
+          // Skip if adjustment sets amount to 0 (but not interruption)
+          if (
+            finalAmount === 0 &&
+            adjustment?.reason !== 'RECURRENCE_INTERRUPTION'
+          ) {
+            return;
+          }
 
           const recurrentTx: Transaction = {
             ...tx,
