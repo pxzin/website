@@ -8,7 +8,7 @@
     <img
       src="/images/tools/logos/fintrack.png"
       alt="FinTrack - Financial Management Tool"
-      class="h-48"
+      class="h-16"
     />
   </div>
   <form method="POST" action="/login?/logout" use:enhance>

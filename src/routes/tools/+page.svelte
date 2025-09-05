@@ -28,7 +28,7 @@
           <img
             src="/images/tools/logos/fintrack.png"
             alt="FinTrack - Financial Management Tool"
-            class="h-40"
+            class="h-12"
           />
         </div>
         <p class="text-[var(--color-neutral-700)] text-center">
