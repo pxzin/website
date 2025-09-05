@@ -132,19 +132,22 @@
   }
 
   // Drawer functions
-  function openFormDrawer(formType: 'account' | 'category' | 'transaction') {
+  function openFormDrawer(formType: 'account' | 'category') {
     activeForm = formType;
     showFormDrawer = true;
 
     // Reset all form states
     showAccountForm = false;
     showCategoryForm = false;
-    showTransactionForm = false;
 
     // Show the requested form
     if (formType === 'account') showAccountForm = true;
     else if (formType === 'category') showCategoryForm = true;
-    else if (formType === 'transaction') showTransactionForm = true;
+  }
+
+  // Função específica para abrir o modal de transação
+  function openTransactionModal() {
+    showTransactionForm = true;
   }
 
   function closeFormDrawer() {
@@ -163,7 +166,12 @@
     formType: 'account' | 'category' | 'transaction'
   ) {
     showFABMenu = false; // Close FAB menu
-    openFormDrawer(formType);
+
+    if (formType === 'transaction') {
+      openTransactionModal();
+    } else {
+      openFormDrawer(formType);
+    }
   }
 
   function closeFABMenu() {
@@ -1041,11 +1049,8 @@
     <AccountForm {accounts} bind:showForm={showAccountForm} />
   {:else if showCategoryForm}
     <CategoryForm {categories} bind:showForm={showCategoryForm} />
-  {:else if showTransactionForm}
-    <TransactionForm
-      {accounts}
-      {categories}
-      bind:showForm={showTransactionForm}
-    />
   {/if}
 </FormDrawer>
+
+<!-- TransactionForm agora é uma modal independente -->
+<TransactionForm {accounts} {categories} bind:showForm={showTransactionForm} />
