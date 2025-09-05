@@ -92,7 +92,65 @@
       openCategoryModal();
     }
   }
+
+  // Function to dynamically change favicon
+  function changeFavicon() {
+    if (typeof document !== 'undefined') {
+      // Remove existing favicon links
+      const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+      existingFavicons.forEach((favicon) => favicon.remove());
+
+      // Add new favicon
+      const newFavicon = document.createElement('link');
+      newFavicon.rel = 'icon';
+      newFavicon.type = 'image/png';
+      newFavicon.href = '/images/tools/fintrack-favicon.png';
+      document.head.appendChild(newFavicon);
+    }
+  }
+
+  // Function to restore default favicon
+  function restoreDefaultFavicon() {
+    if (typeof document !== 'undefined') {
+      // Remove existing favicon links
+      const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+      existingFavicons.forEach((favicon) => favicon.remove());
+
+      // Add default favicon
+      const defaultFavicon = document.createElement('link');
+      defaultFavicon.rel = 'icon';
+      defaultFavicon.href = '/favicon.png';
+      document.head.appendChild(defaultFavicon);
+    }
+  }
+
+  // Change favicon when component mounts and restore when destroyed
+  import { onMount, onDestroy } from 'svelte';
+  onMount(() => {
+    changeFavicon();
+  });
+
+  onDestroy(() => {
+    restoreDefaultFavicon();
+  });
 </script>
+
+<svelte:head>
+  <title>FinTrack - Financial Management Tool</title>
+  <link
+    rel="icon"
+    type="image/png"
+    sizes="32x32"
+    href="/images/tools/fintrack-favicon.png"
+  />
+  <link
+    rel="icon"
+    type="image/png"
+    sizes="16x16"
+    href="/images/tools/fintrack-favicon.png"
+  />
+  <link rel="shortcut icon" href="/images/tools/fintrack-favicon.png" />
+</svelte:head>
 
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">
   <div class="max-w-6xl mx-auto px-4">

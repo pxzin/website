@@ -4,9 +4,13 @@
 </script>
 
 <div class="flex justify-between items-center mb-8">
-  <h1 class="text-4xl font-bold text-[var(--color-primary-default)]">
-    Financial Overview
-  </h1>
+  <div class="flex items-center">
+    <img
+      src="/images/tools/logos/fintrack.png"
+      alt="FinTrack - Financial Management Tool"
+      class="h-48"
+    />
+  </div>
   <form method="POST" action="/login?/logout" use:enhance>
     <button
       type="submit"

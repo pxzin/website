@@ -24,12 +24,14 @@
         href="/tools/finance"
         class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
       >
-        <h2
-          class="text-2xl font-semibold text-[var(--color-primary-default)] mb-2"
-        >
-          Financial Tool
-        </h2>
-        <p class="text-[var(--color-neutral-700)]">
+        <div class="flex items-center justify-center mb-4">
+          <img
+            src="/images/tools/logos/fintrack.png"
+            alt="FinTrack - Financial Management Tool"
+            class="h-40"
+          />
+        </div>
+        <p class="text-[var(--color-neutral-700)] text-center">
           Manage your accounts, track expenses, and view financial projections.
         </p>
       </a>
