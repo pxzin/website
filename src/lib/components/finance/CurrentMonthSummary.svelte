@@ -60,7 +60,12 @@
 
 <div class="bg-white border border-gray-200 rounded-lg p-0 shadow-sm">
   <!-- Monthly Header -->
-  <MonthlyHeader {totalBalance} {monthProgress} {remainingDays} {transactions} />
+  <MonthlyHeader
+    {totalBalance}
+    {monthProgress}
+    {remainingDays}
+    {transactions}
+  />
 
   <!-- Current month stats -->
   <div class="p-6">
