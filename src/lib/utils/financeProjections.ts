@@ -13,7 +13,8 @@ export interface Account {
 export interface Category {
   id: string;
   name: string;
-  type: string;
+  type: string; // Keep for compatibility, will be removed later
+  icon: string;
 }
 
 export interface Transaction {
@@ -37,7 +38,6 @@ export interface Transaction {
   originalTransactionId?: string; // Keep original ID for adjustments
   // Names from JOINs
   category_name?: string;
-  category_type?: string;
   account_name?: string;
   account_type?: string;
 }
@@ -197,7 +197,6 @@ export function calculateProjections(
             adjustmentReason: adjustment?.reason || null,
             // Preserve category and account names
             category_name: tx.category_name,
-            category_type: tx.category_type,
             account_name: tx.account_name,
             account_type: tx.account_type,
           };

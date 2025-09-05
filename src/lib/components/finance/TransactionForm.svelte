@@ -160,7 +160,7 @@
   function applyTemplate(template: (typeof templates)[0]) {
     newTransactionDescription = template.name;
     newTransactionAmount = template.amount;
-    
+
     // Set transaction type based on template
     newTransactionType = template.type === 'INCOME' ? 'income' : 'expense';
 
@@ -540,8 +540,7 @@
               <option value="">📁 Select Category</option>
               {#each categories as category}
                 <option value={category.id}
-                  >{category.type === 'INCOME' ? '💰' : '💸'}
-                  {category.name}</option
+                  >{category.icon || '�'} {category.name}</option
                 >
               {/each}
             </select>

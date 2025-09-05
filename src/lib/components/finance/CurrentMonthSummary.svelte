@@ -41,10 +41,7 @@
 
   // Calculate actual income and expenses for current month
   $: actualIncome = currentMonthTransactions
-    .filter((t: any) => {
-      const category = categories.find((c: any) => c.id === t.category_id);
-      return category?.type === 'INCOME';
-    })
+    .filter((t: any) => t.type === 'income')
     .reduce((sum: number, t: any) => {
       // For installments, use the monthly amount instead of total amount
       if (t.installments_total && t.installments_total > 1) {
@@ -54,10 +51,7 @@
     }, 0);
 
   $: actualExpenses = currentMonthTransactions
-    .filter((t: any) => {
-      const category = categories.find((c: any) => c.id === t.category_id);
-      return category?.type === 'EXPENSE';
-    })
+    .filter((t: any) => t.type === 'expense')
     .reduce((sum: number, t: any) => {
       // For installments, use the monthly amount instead of total amount
       if (t.installments_total && t.installments_total > 1) {
@@ -110,10 +104,7 @@
   });
 
   $: previousMonthExpenses = previousMonthTransactions
-    .filter((t: any) => {
-      const category = categories.find((c: any) => c.id === t.category_id);
-      return category?.type === 'EXPENSE';
-    })
+    .filter((t: any) => t.type === 'expense')
     .reduce((sum: number, t: any) => {
       if (t.installments_total && t.installments_total > 1) {
         return sum + t.amount / t.installments_total;
@@ -131,10 +122,7 @@
 
   // Find biggest expense this month
   $: biggestExpense = currentMonthTransactions
-    .filter((t: any) => {
-      const category = categories.find((c: any) => c.id === t.category_id);
-      return category?.type === 'EXPENSE';
-    })
+    .filter((t: any) => t.type === 'expense')
     .reduce((max: any, t: any) => {
       const amount = Math.abs(
         t.installments_total && t.installments_total > 1
@@ -151,16 +139,20 @@
 
   // Calculate expense distribution by category
   $: expensesByCategory = categories
-    .filter((c: any) => c.type === 'EXPENSE')
     .map((category: any) => {
-      const categoryExpenses = currentMonthTransactions
-        .filter((t: any) => t.category_id === category.id)
+      const categoryTransactions = currentMonthTransactions.filter(
+        (t: any) => t.category_id === category.id
+      );
+
+      const categoryExpenses = categoryTransactions
+        .filter((t: any) => t.type === 'expense')
         .reduce((sum: number, t: any) => {
           if (t.installments_total && t.installments_total > 1) {
             return sum + Math.abs(t.amount / t.installments_total);
           }
           return sum + Math.abs(t.amount);
         }, 0);
+
       return {
         ...category,
         amount: categoryExpenses,
@@ -173,12 +165,62 @@
     .filter((c: any) => c.amount > 0)
     .sort((a: any, b: any) => b.amount - a.amount);
 
+  // Calculate all categories distribution (both income and expenses)
+  $: allCategoriesBreakdown = categories
+    .map((category: any) => {
+      const categoryTransactions = currentMonthTransactions.filter(
+        (t: any) => t.category_id === category.id
+      );
+
+      if (categoryTransactions.length === 0) return null;
+
+      // Calculate net amounts for income and expenses separately
+      const incomeAmount = categoryTransactions
+        .filter((t: any) => t.type === 'income')
+        .reduce((sum: number, t: any) => {
+          if (t.installments_total && t.installments_total > 1) {
+            return sum + t.amount / t.installments_total;
+          }
+          return sum + t.amount;
+        }, 0);
+
+      const expenseAmount = categoryTransactions
+        .filter((t: any) => t.type === 'expense')
+        .reduce((sum: number, t: any) => {
+          if (t.installments_total && t.installments_total > 1) {
+            return sum + Math.abs(t.amount / t.installments_total);
+          }
+          return sum + Math.abs(t.amount);
+        }, 0);
+
+      // Calculate net amount for this category
+      const netAmount = incomeAmount - expenseAmount;
+      const absoluteAmount = Math.abs(netAmount);
+
+      // Determine primary type based on net result
+      const primaryType = netAmount >= 0 ? 'income' : 'expense';
+
+      // Calculate percentage based on appropriate base
+      const totalBase =
+        primaryType === 'income' ? actualIncome : Math.abs(actualExpenses);
+      const percentage = totalBase > 0 ? (absoluteAmount / totalBase) * 100 : 0;
+
+      return {
+        ...category,
+        amount: absoluteAmount,
+        netAmount: netAmount,
+        type: primaryType,
+        percentage: Math.min(percentage, 100), // Cap at 100% to prevent UI issues
+        incomeAmount,
+        expenseAmount,
+      };
+    })
+    .filter((c: any) => c !== null && c.amount > 0)
+    .sort((a: any, b: any) => b.amount - a.amount);
+
   // Weekly spending pattern
   $: weeklySpending = currentMonthTransactions
-    .filter((t: any) => {
-      const category = categories.find((c: any) => c.id === t.category_id);
-      return category?.type === 'EXPENSE';
-    })
+    .filter((t: any) => t.type === 'expense')
     .reduce((weeks: any[], t: any) => {
       const transactionDate = new Date(t.date);
       const weekNumber = Math.ceil(transactionDate.getDate() / 7);
@@ -437,23 +479,17 @@
             <div class="flex justify-between">
               <span class="text-gray-600">Income Transactions:</span>
               <span class="font-semibold text-green-700">
-                {currentMonthTransactions.filter((t: any) => {
-                  const category = categories.find(
-                    (c: any) => c.id === t.category_id
-                  );
-                  return category?.type === 'INCOME';
-                }).length}
+                {currentMonthTransactions.filter(
+                  (t: any) => t.type === 'income'
+                ).length}
               </span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Expense Transactions:</span>
               <span class="font-semibold text-red-700">
-                {currentMonthTransactions.filter((t: any) => {
-                  const category = categories.find(
-                    (c: any) => c.id === t.category_id
-                  );
-                  return category?.type === 'EXPENSE';
-                }).length}
+                {currentMonthTransactions.filter(
+                  (t: any) => t.type === 'expense'
+                ).length}
               </span>
             </div>
           </div>
@@ -636,26 +672,38 @@
                 Top Categories
               </h4>
               <div class="space-y-2">
-                {#each expensesByCategory.slice(0, 4) as category}
+                {#each allCategoriesBreakdown.slice(0, 4) as category}
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2 flex-1 min-w-0">
-                      <div class="w-2 h-2 rounded-full bg-red-400"></div>
+                      <div
+                        class="w-2 h-2 rounded-full {category.type === 'income'
+                          ? 'bg-green-400'
+                          : 'bg-red-400'}"
+                      ></div>
                       <span class="text-sm text-gray-700 truncate"
-                        >{category.name}</span
+                        >{category.icon || '📁'} {category.name}</span
                       >
                     </div>
                     <div class="flex items-center gap-2">
                       <span class="text-xs font-medium text-gray-500">
                         {category.percentage.toFixed(0)}%
                       </span>
-                      <span class="text-sm font-semibold text-red-700">
-                        ${category.amount.toFixed(2)}
+                      <span
+                        class="text-sm font-semibold {category.type === 'income'
+                          ? 'text-green-700'
+                          : 'text-red-700'}"
+                      >
+                        {category.type === 'income'
+                          ? '+'
+                          : '-'}${category.amount.toFixed(2)}
                       </span>
                     </div>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-1">
                     <div
-                      class="bg-red-400 h-1 rounded-full transition-all duration-300"
+                      class="{category.type === 'income'
+                        ? 'bg-green-400'
+                        : 'bg-red-400'} h-1 rounded-full transition-all duration-300"
                       style="width: {category.percentage}%"
                     ></div>
                   </div>

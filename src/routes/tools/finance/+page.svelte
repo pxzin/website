@@ -63,12 +63,7 @@
 
   function getCategoryName(categoryId: string) {
     const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.name : 'Unknown';
-  }
-
-  function getCategoryType(categoryId: string) {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.type : 'UNKNOWN';
+    return category ? `${category.icon || '📁'} ${category.name}` : 'Unknown';
   }
 
   function getAccountName(accountId: string) {
@@ -504,7 +499,7 @@
               class="bg-white p-4 rounded-lg shadow-sm border border-purple-200"
             >
               <div class="flex items-center gap-2 mb-2">
-                {#if getCategoryType(recurrence.category_id) === 'INCOME'}
+                {#if recurrence.type === 'income'}
                   <span class="text-green-600 font-bold">↗️</span>
                   <span class="font-medium text-green-700"
                     >{recurrence.description}</span
@@ -532,7 +527,7 @@
                       recurrence.recurrence_interval
                     )}
                   </span>
-                  {#if getCategoryType(recurrence.category_id) === 'INCOME'}
+                  {#if recurrence.type === 'income'}
                     <span
                       class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
                       >INCOME</span
@@ -546,14 +541,10 @@
                 </div>
                 <div
                   class="font-semibold text-lg"
-                  class:text-green-600={getCategoryType(
-                    recurrence.category_id
-                  ) === 'INCOME'}
-                  class:text-red-600={getCategoryType(
-                    recurrence.category_id
-                  ) === 'EXPENSE'}
+                  class:text-green-600={recurrence.type === 'income'}
+                  class:text-red-600={recurrence.type === 'expense'}
                 >
-                  {#if getCategoryType(recurrence.category_id) === 'EXPENSE'}
+                  {#if recurrence.type === 'expense'}
                     -${Math.abs(recurrence.amount).toFixed(2)}
                   {:else}
                     +${recurrence.amount.toFixed(2)}
@@ -586,7 +577,7 @@
                 class="bg-white p-4 rounded-lg shadow-sm border border-blue-200"
               >
                 <div class="flex items-center gap-2 mb-2">
-                  {#if getCategoryType(installment.category_id) === 'INCOME'}
+                  {#if installment.type === 'income'}
                     <span class="text-green-600 font-bold">↗️</span>
                     <span class="font-medium text-green-700"
                       >{installment.description}</span
@@ -626,7 +617,7 @@
                     >
                       📊 {status.remaining} remaining
                     </span>
-                    {#if getCategoryType(installment.category_id) === 'INCOME'}
+                    {#if installment.type === 'income'}
                       <span
                         class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
                         >INCOME</span
@@ -641,21 +632,17 @@
                   <div class="text-right">
                     <div
                       class="font-semibold"
-                      class:text-green-600={getCategoryType(
-                        installment.category_id
-                      ) === 'INCOME'}
-                      class:text-red-600={getCategoryType(
-                        installment.category_id
-                      ) === 'EXPENSE'}
+                      class:text-green-600={installment.type === 'income'}
+                      class:text-red-600={installment.type === 'expense'}
                     >
-                      {#if getCategoryType(installment.category_id) === 'EXPENSE'}
+                      {#if installment.type === 'expense'}
                         -${Math.abs(installment.amount).toFixed(2)} total
                       {:else}
                         +${installment.amount.toFixed(2)} total
                       {/if}
                     </div>
                     <div class="text-xs text-gray-500">
-                      {#if getCategoryType(installment.category_id) === 'EXPENSE'}
+                      {#if installment.type === 'expense'}
                         -${Math.abs(
                           installment.amount / installment.installments_total
                         ).toFixed(2)}/installment
@@ -669,10 +656,7 @@
                 </div>
 
                 <!-- Installment Details -->
-                <InstallmentDetails
-                  transaction={installment}
-                  categoryType={getCategoryType(installment.category_id)}
-                />
+                <InstallmentDetails transaction={installment} />
 
                 <div class="mt-2 text-xs text-gray-500">
                   Start: {installment.installment_start_date ||
@@ -728,7 +712,7 @@
               >
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1">
-                    {#if getCategoryType(transaction.category_id) === 'INCOME'}
+                    {#if transaction.type === 'income'}
                       <span class="text-green-600 font-bold">↗️</span>
                       <span class="font-medium">{transaction.description}</span>
                       <span
@@ -800,14 +784,10 @@
                   <div class="text-right">
                     <div
                       class="font-semibold text-lg"
-                      class:text-green-500={getCategoryType(
-                        transaction.category_id
-                      ) === 'INCOME'}
-                      class:text-red-500={getCategoryType(
-                        transaction.category_id
-                      ) === 'EXPENSE'}
+                      class:text-green-500={transaction.type === 'income'}
+                      class:text-red-500={transaction.type === 'expense'}
                     >
-                      {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
+                      {#if transaction.type === 'expense'}
                         -${Math.abs(getBalanceImpact(transaction)).toFixed(2)}
                       {:else}
                         +${getBalanceImpact(transaction).toFixed(2)}
@@ -815,7 +795,7 @@
                     </div>
                     {#if transaction.installments_total && transaction.installments_total > 1}
                       <div class="text-xs text-gray-500">
-                        Total: {#if getCategoryType(transaction.category_id) === 'EXPENSE'}-{/if}${Math.abs(
+                        Total: {#if transaction.type === 'expense'}-{/if}${Math.abs(
                           transaction.amount
                         ).toFixed(2)}
                       </div>
@@ -858,7 +838,7 @@
               >
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1">
-                    {#if getCategoryType(transaction.category_id) === 'INCOME'}
+                    {#if transaction.type === 'income'}
                       <span class="text-green-600 font-bold">↗️</span>
                       <span class="font-medium">{transaction.description}</span>
                       <span
@@ -930,14 +910,10 @@
                   <div class="text-right">
                     <div
                       class="font-semibold text-lg"
-                      class:text-green-500={getCategoryType(
-                        transaction.category_id
-                      ) === 'INCOME'}
-                      class:text-red-500={getCategoryType(
-                        transaction.category_id
-                      ) === 'EXPENSE'}
+                      class:text-green-500={transaction.type === 'income'}
+                      class:text-red-500={transaction.type === 'expense'}
                     >
-                      {#if getCategoryType(transaction.category_id) === 'EXPENSE'}
+                      {#if transaction.type === 'expense'}
                         -${Math.abs(getBalanceImpact(transaction)).toFixed(2)}
                       {:else}
                         +${getBalanceImpact(transaction).toFixed(2)}
@@ -945,7 +921,7 @@
                     </div>
                     {#if transaction.installments_total && transaction.installments_total > 1}
                       <div class="text-xs text-gray-500">
-                        Total: {#if getCategoryType(transaction.category_id) === 'EXPENSE'}-{/if}${Math.abs(
+                        Total: {#if transaction.type === 'expense'}-{/if}${Math.abs(
                           transaction.amount
                         ).toFixed(2)}
                       </div>
@@ -979,7 +955,6 @@
     <!-- Projections Section -->
     <ProjectionsCarousel
       {projections}
-      {getCategoryType}
       {formatRecurrenceInterval}
       onRefreshProjections={refreshProjections}
       onDebugData={debugData}
