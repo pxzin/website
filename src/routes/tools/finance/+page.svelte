@@ -158,11 +158,20 @@
     <!-- Page Header Component -->
     <FinancePageHeader />
 
+    <!-- 1. Current Month Overview (Financial Summary) -->
     <CurrentMonthSummary
       {totalBalance}
       {projections}
       {transactions}
       {categories}
+    />
+
+    <!-- 2. Projections Section -->
+    <ProjectionsCarousel
+      {projections}
+      {formatRecurrenceInterval}
+      onRefreshProjections={refreshProjections}
+      onDebugData={debugData}
     />
 
     <!-- Getting Started Guide Component -->
@@ -183,14 +192,6 @@
 
     <!-- Transactions List Component -->
     <TransactionsList {transactions} {categories} {accounts} />
-
-    <!-- Projections Section -->
-    <ProjectionsCarousel
-      {projections}
-      {formatRecurrenceInterval}
-      onRefreshProjections={refreshProjections}
-      onDebugData={debugData}
-    />
 
     <!-- Recurrence Adjustments Section -->
     <RecurrenceAdjustments {projections} {recurrenceAdjustments} />
