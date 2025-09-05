@@ -11,12 +11,41 @@
     FormDrawer,
   } from '$lib/components';
   import RecurrenceAdjustments from '$lib/components/finance/RecurrenceAdjustments.svelte';
+  // Import new page components
+  import FinancePageHeader from '$lib/components/finance/page/FinancePageHeader.svelte';
+  import GettingStartedGuide from '$lib/components/finance/page/GettingStartedGuide.svelte';
+  import BackupSection from '$lib/components/finance/page/BackupSection.svelte';
   import {
     showError,
     showSuccess,
     showInfo,
     showWarning,
   } from '$lib/stores/toast';
+
+  // Import helper functions
+  import {
+    getCategoryName,
+    getAccountName,
+    getInstallmentStatus,
+    getInstallmentValues,
+    getBalanceImpact,
+    formatRecurrenceInterval,
+    getCurrentMonthTransactions,
+    getRecurrentTransactions,
+    getInstallmentTransactions,
+    getRegularTransactions,
+    calculateTotalBalance,
+  } from '$lib/helpers/financeHelpers';
+
+  // Import action functions
+  import {
+    refreshProjections,
+    debugData,
+    exportBackup,
+    importBackup,
+    createDeleteTransactionEnhance,
+  } from '$lib/helpers/financeActions';
+
   export let data;
 
   $: accounts = data.accounts;
@@ -25,16 +54,12 @@
   $: projections = data.projections;
   $: recurrenceAdjustments = data.recurrenceAdjustments;
 
-  $: totalBalance = accounts.reduce((sum, acc) => sum + acc.current_balance, 0);
+  $: totalBalance = calculateTotalBalance(accounts);
 
-  // Filtered transactions for different views
-  $: recurrentTransactions = transactions.filter((tx) => tx.is_recurrent);
-  $: installmentTransactions = transactions.filter(
-    (tx) => tx.installments_total
-  );
-  $: regularTransactions = transactions.filter(
-    (tx) => !tx.is_recurrent && !tx.installments_total
-  );
+  // Filtered transactions for different views using helpers
+  $: recurrentTransactions = getRecurrentTransactions(transactions);
+  $: installmentTransactions = getInstallmentTransactions(transactions);
+  $: regularTransactions = getRegularTransactions(transactions);
 
   // Tab state for transactions section
   let activeTransactionsTab = 'current'; // 'current' or 'all'
@@ -51,84 +76,16 @@
   let showCategoryForm = false;
   let showTransactionForm = false;
 
-  // Get current month transactions
-  $: currentMonthTransactions = transactions.filter((tx) => {
-    const txDate = new Date(tx.date);
-    const now = new Date();
-    return (
-      txDate.getMonth() === now.getMonth() &&
-      txDate.getFullYear() === now.getFullYear()
-    );
-  });
+  // Get current month transactions using helper
+  $: currentMonthTransactions = getCurrentMonthTransactions(transactions);
 
-  function getCategoryName(categoryId: string) {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? `${category.icon || '📁'} ${category.name}` : 'Unknown';
+  // Local helper functions that call imported helpers with bound parameters
+  function getCategoryNameBound(categoryId: string) {
+    return getCategoryName(categoryId, categories);
   }
 
-  function getAccountName(accountId: string) {
-    const account = accounts.find((acc) => acc.id === accountId);
-    return account ? account.name : 'Unknown';
-  }
-
-  function getInstallmentStatus(transaction: any) {
-    if (!transaction.installments_total) return null;
-
-    const total = transaction.installments_total;
-    const paid = transaction.installments_paid || 0;
-    const remaining = total - paid;
-    const percentage = Math.round((paid / total) * 100);
-
-    return {
-      total,
-      paid,
-      remaining,
-      percentage,
-      isComplete: paid >= total,
-    };
-  }
-
-  function getInstallmentValues(transaction: any) {
-    if (!transaction.installments_total) return null;
-
-    const totalAmount = Math.abs(transaction.amount);
-    const installmentValue = totalAmount / transaction.installments_total;
-    const paidInstallments = transaction.installments_paid || 0;
-    const remainingInstallments =
-      transaction.installments_total - paidInstallments;
-
-    const totalPaid = installmentValue * paidInstallments;
-    const totalRemaining = installmentValue * remainingInstallments;
-
-    return {
-      installmentValue,
-      totalPaid,
-      totalRemaining,
-      paidInstallments,
-      remainingInstallments,
-      totalInstallments: transaction.installments_total,
-      isComplete: paidInstallments >= transaction.installments_total,
-    };
-  }
-
-  // Function to get the actual balance impact (installment amount for installments)
-  function getBalanceImpact(transaction: any) {
-    if (transaction.installments_total && transaction.installments_total > 1) {
-      return transaction.amount / transaction.installments_total;
-    }
-    return transaction.amount;
-  }
-
-  function formatRecurrenceInterval(interval: string | null) {
-    if (!interval) return '';
-    switch (interval) {
-      case 'MONTHLY':
-        return 'Monthly';
-      case 'YEARLY':
-        return 'Yearly';
-      default:
-        return interval;
-    }
+  function getAccountNameBound(accountId: string) {
+    return getAccountName(accountId, accounts);
   }
 
   // Drawer functions (agora vazio, pois todos são modais)
@@ -185,189 +142,7 @@
 
   // Helper function for delete transaction enhance
   function deleteTransactionEnhance() {
-    return ({ formData }) => {
-      return async ({ result }) => {
-        if (result.type === 'failure') {
-          showError(result.data?.error || 'Failed to delete transaction');
-        } else if (result.type === 'success') {
-          showSuccess('Transaction deleted successfully');
-          await invalidateAll();
-        }
-      };
-    };
-  }
-
-  // Refresh projections function
-  async function refreshProjections() {
-    try {
-      const formData = new FormData();
-      const response = await fetch('?/refreshProjections', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        showSuccess('Projections refreshed successfully!');
-        await invalidateAll();
-      } else {
-        showError('Failed to refresh projections');
-      }
-    } catch (error) {
-      console.error('Error refreshing projections:', error);
-      showError('Failed to refresh projections');
-    }
-  }
-
-  // Debug data function
-  async function debugData() {
-    try {
-      const formData = new FormData();
-      const response = await fetch('?/debugData', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.type === 'success') {
-          showInfo(result.data.message);
-          console.log('Debug data:', result.data.counts);
-        } else {
-          showError('Failed to debug data');
-        }
-      } else {
-        showError('Failed to debug data');
-      }
-    } catch (error) {
-      console.error('Error debugging data:', error);
-      showError('Failed to debug data');
-    }
-  }
-
-  // Backup functions
-  async function exportBackup() {
-    try {
-      showInfo('Creating backup...');
-
-      const response = await fetch('/tools/finance/backup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'export' }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-
-        // Create and download the backup file
-        const blob = new Blob([result.backup], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showSuccess('Backup exported successfully!');
-      } else {
-        const result = await response.json();
-        showError(result?.error || 'Failed to export backup');
-      }
-    } catch (error) {
-      showError('Failed to export backup');
-      console.error(error);
-    }
-  }
-
-  async function importBackup() {
-    try {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-
-      input.onchange = async (event) => {
-        const file = (event.target as HTMLInputElement).files?.[0];
-        if (!file) return;
-
-        try {
-          // First, preview the backup content
-          const fileText = await file.text();
-          let backup;
-
-          try {
-            backup = JSON.parse(fileText);
-          } catch (parseError) {
-            showError('Invalid JSON file. Please select a valid backup file.');
-            return;
-          }
-
-          // Validate and show preview
-          if (
-            !backup.data ||
-            !backup.data.accounts ||
-            !backup.data.categories ||
-            !backup.data.transactions
-          ) {
-            showError(
-              "Invalid backup file structure. This doesn't appear to be a valid backup file."
-            );
-            return;
-          }
-
-          const previewMessage = `📊 Backup Preview:
-• Created: ${backup.timestamp ? new Date(backup.timestamp).toLocaleDateString() : 'Unknown'}
-• Version: ${backup.version || 'Unknown'}
-• Accounts: ${backup.data.accounts.length}
-• Categories: ${backup.data.categories.length}
-• Transactions: ${backup.data.transactions.length}
-
-⚠️ This will REPLACE ALL existing data!`;
-
-          const confirmed = confirm(
-            previewMessage + '\n\nDo you want to continue?'
-          );
-          if (!confirmed) return;
-
-          const doubleConfirm = prompt(
-            '⚠️ FINAL WARNING: Type "RESTORE BACKUP" to confirm complete data replacement:'
-          );
-          if (doubleConfirm !== 'RESTORE BACKUP') {
-            showInfo('Operation cancelled - confirmation text did not match');
-            return;
-          }
-
-          showWarning('Importing backup and clearing existing data...');
-
-          const formData = new FormData();
-          formData.append('backupFile', file);
-
-          const response = await fetch('/tools/finance?/importBackup', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            showSuccess(result.message || 'Backup imported successfully!');
-            setTimeout(() => window.location.reload(), 2000);
-          } else {
-            const result = await response.json();
-            showError(result?.error || 'Failed to import backup');
-          }
-        } catch (error) {
-          showError('Failed to process backup file');
-          console.error(error);
-        }
-      };
-
-      input.click();
-    } catch (error) {
-      showError('Failed to open file dialog');
-      console.error(error);
-    }
+    return createDeleteTransactionEnhance();
   }
 </script>
 
@@ -376,18 +151,8 @@
 
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">
   <div class="max-w-6xl mx-auto px-4">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-4xl font-bold text-[var(--color-primary-default)]">
-        Financial Overview
-      </h1>
-      <form method="POST" action="/login?/logout" use:enhance>
-        <button
-          type="submit"
-          class="text-sm text-gray-600 hover:text-primary-default"
-          >Logout</button
-        >
-      </form>
-    </div>
+    <!-- Page Header Component -->
+    <FinancePageHeader />
 
     <CurrentMonthSummary
       {totalBalance}
@@ -396,99 +161,11 @@
       {categories}
     />
 
-    <!-- Getting Started Guide -->
-    {#if accounts.length === 0 && categories.length === 0}
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-        <div class="text-center">
-          <div class="text-4xl mb-4">🚀</div>
-          <h3 class="text-xl font-semibold text-blue-900 mb-3">
-            Welcome to Your Financial Tool!
-          </h3>
-          <p class="text-blue-700 mb-4">
-            Get started by setting up your accounts and categories:
-          </p>
-          <div class="grid md:grid-cols-3 gap-4 text-sm">
-            <div class="bg-white p-4 rounded-lg border border-blue-200">
-              <div class="text-2xl mb-2">🏦</div>
-              <h4 class="font-semibold mb-1">1. Add Accounts</h4>
-              <p class="text-gray-600">
-                Create accounts for your bank, credit cards, and cash.
-              </p>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-blue-200">
-              <div class="text-2xl mb-2">📂</div>
-              <h4 class="font-semibold mb-1">2. Create Categories</h4>
-              <p class="text-gray-600">
-                Organize your income and expenses into categories.
-              </p>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-blue-200">
-              <div class="text-2xl mb-2">💸</div>
-              <h4 class="font-semibold mb-1">3. Add Transactions</h4>
-              <p class="text-gray-600">
-                Track your financial movements and see projections.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    {/if}
+    <!-- Getting Started Guide Component -->
+    <GettingStartedGuide {accounts} {categories} />
 
-    <!-- Backup & Data Management Section -->
-    <div
-      class="bg-gray-50 p-6 rounded-lg shadow-md mb-8 border-l-4 border-gray-500"
-    >
-      <h2 class="text-2xl font-semibold mb-4 text-gray-800">
-        💾 Backup & Data Management
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <span>📥</span>
-            Export Backup
-          </h3>
-          <p class="text-sm text-gray-600 mb-3">
-            Download a complete backup of all your financial data as a JSON
-            file.
-          </p>
-          <button
-            on:click={exportBackup}
-            class="bg-emerald-500 text-white px-4 py-2 rounded text-sm hover:bg-emerald-600 transition-colors w-full"
-          >
-            📥 Export Backup
-          </button>
-        </div>
-
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <span>📤</span>
-            Import Backup
-          </h3>
-          <p class="text-sm text-gray-600 mb-3">
-            Restore all data from a backup file. This will replace all existing
-            data.
-          </p>
-          <button
-            on:click={importBackup}
-            class="bg-amber-500 text-white px-4 py-2 rounded text-sm hover:bg-amber-600 transition-colors border-2 border-amber-300 w-full"
-          >
-            📤 Import Backup
-          </button>
-        </div>
-      </div>
-      <div class="mt-4 text-xs text-gray-500 bg-blue-50 p-3 rounded">
-        <p><strong>💡 Backup Tips:</strong></p>
-        <p>
-          • Export creates a timestamped JSON file with all your accounts,
-          categories, and transactions
-        </p>
-        <p>
-          • Import will completely replace all existing data - make sure to
-          export first!
-        </p>
-        <p>• Keep regular backups to protect your financial data</p>
-      </div>
-    </div>
+    <!-- Backup Section Component -->
+    <BackupSection {data} />
 
     <!-- Active Recurrences Section -->
     {#if recurrentTransactions.length > 0}
@@ -518,7 +195,7 @@
               </div>
 
               <div class="text-sm text-gray-600 mb-2">
-                {getCategoryName(recurrence.category_id)} • {getAccountName(
+                {getCategoryNameBound(recurrence.category_id)} • {getAccountNameBound(
                   recurrence.account_id
                 )}
               </div>
@@ -596,7 +273,7 @@
                 </div>
 
                 <div class="text-sm text-gray-600 mb-2">
-                  {getCategoryName(installment.category_id)} • {getAccountName(
+                  {getCategoryNameBound(installment.category_id)} • {getAccountNameBound(
                     installment.account_id
                   )}
                 </div>
@@ -736,7 +413,7 @@
 
                   <!-- Transaction Info -->
                   <div class="text-sm text-gray-600 mb-1">
-                    {getCategoryName(transaction.category_id)} - {getAccountName(
+                    {getCategoryNameBound(transaction.category_id)} - {getAccountNameBound(
                       transaction.account_id
                     )} ({transaction.date})
                   </div>
@@ -862,7 +539,7 @@
 
                   <!-- Transaction Info -->
                   <div class="text-sm text-gray-600 mb-1">
-                    {getCategoryName(transaction.category_id)} - {getAccountName(
+                    {getCategoryNameBound(transaction.category_id)} - {getAccountNameBound(
                       transaction.account_id
                     )} ({transaction.date})
                   </div>
