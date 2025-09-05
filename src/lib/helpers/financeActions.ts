@@ -49,7 +49,6 @@ export async function debugData(): Promise<void> {
       const result = await response.json();
       if (result.type === 'success') {
         showInfo(result.data.message);
-        console.log('Debug data:', result.data.counts);
       } else {
         showError('Failed to debug data');
       }

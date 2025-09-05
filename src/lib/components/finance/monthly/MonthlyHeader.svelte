@@ -3,7 +3,6 @@
   import { getCurrentMonthInfo } from '$lib/helpers/monthlyCalculations';
 
   export let totalBalance: number;
-  export let projections: any[] = [];
   export let transactions: any[] = [];
   export let monthProgress: number;
   export let remainingDays: number;
@@ -28,7 +27,7 @@
   </div>
 
   <!-- Show if no data is available -->
-  {#if projections.length === 0 && transactions.length === 0}
+  {#if transactions.length === 0}
     <div class="mt-4 bg-blue-800/20 rounded-lg p-4 text-center">
       <div class="text-blue-200 text-sm">
         📊 No financial data available yet. Start by adding accounts,

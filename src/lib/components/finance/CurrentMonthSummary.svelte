@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { scale, fly } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing';
   import MonthlyHeader from './monthly/MonthlyHeader.svelte';
   import MonthlyStatsCards from './monthly/MonthlyStatsCards.svelte';
   import FinancialInsights from './monthly/FinancialInsights.svelte';
@@ -62,11 +60,11 @@
 
 <div class="bg-white border border-gray-200 rounded-lg p-0 shadow-sm">
   <!-- Monthly Header -->
-  <MonthlyHeader {totalBalance} {monthProgress} {remainingDays} />
+  <MonthlyHeader {totalBalance} {monthProgress} {remainingDays} {transactions} />
 
   <!-- Current month stats -->
   <div class="p-6">
-    {#if projections.length === 0 && transactions.length === 0 && categories.length === 0}
+    {#if transactions.length === 0 && categories.length === 0}
       <!-- No data state -->
       <div class="text-center py-8">
         <div class="text-6xl mb-4">📊</div>

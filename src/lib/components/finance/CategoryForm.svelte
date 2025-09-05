@@ -256,7 +256,7 @@
                     result.data?.error || 'Failed to delete category';
                   if (errorMessage.includes('existing transactions')) {
                     showError(
-                      'Não é possível excluir uma categoria que possui transações. Exclua primeiro as transações associadas.'
+                      'Cannot delete a category that has transactions. Please delete the associated transactions first.'
                     );
                   } else {
                     showError(errorMessage);
