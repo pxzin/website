@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import { showError, showSuccess } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
@@ -95,33 +96,6 @@
 
   function handleClose() {
     showForm = false;
-  }
-
-  async function handleDelete(categoryId: string) {
-    if (!confirm('Are you sure you want to delete this category?')) {
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('categoryId', categoryId);
-
-      const response = await fetch('/tools/finance?/deleteCategory', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        showSuccess('Category deleted successfully!');
-        await invalidateAll();
-      } else {
-        const result = await response.json();
-        showError(result.message || 'Failed to delete category');
-      }
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      showError('Failed to delete category');
-    }
   }
 </script>
 
@@ -264,26 +238,48 @@
       </p>
     </div>
   {:else}
-    <ul class="space-y-2">
+    <div class="flex flex-wrap gap-3">
       {#each categories as category}
-        <li
-          class="flex justify-between items-center p-3 bg-white rounded-lg border hover:shadow-sm transition-shadow"
+        <div
+          class="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 group"
         >
-          <div class="flex items-center gap-3">
-            <span class="text-2xl">{category.icon || '📁'}</span>
-            <div>
-              <span class="font-medium text-gray-700">{category.name}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            on:click={() => handleDelete(category.id)}
-            class="text-red-500 text-sm hover:underline p-1"
+          <span class="text-lg">{category.icon || '📁'}</span>
+          <span class="font-medium text-gray-700 text-sm">{category.name}</span>
+          <form
+            method="POST"
+            action="?/deleteCategory"
+            use:enhance={({ formData }) => {
+              return async ({ result }: any) => {
+                if (result.type === 'failure') {
+                  // Personalizamos a mensagem para o usuário em português
+                  const errorMessage =
+                    result.data?.error || 'Failed to delete category';
+                  if (errorMessage.includes('existing transactions')) {
+                    showError(
+                      'Não é possível excluir uma categoria que possui transações. Exclua primeiro as transações associadas.'
+                    );
+                  } else {
+                    showError(errorMessage);
+                  }
+                } else if (result.type === 'success') {
+                  showSuccess('Category deleted successfully!');
+                  await invalidateAll();
+                }
+              };
+            }}
+            class="inline opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
-            ✕
-          </button>
-        </li>
+            <input type="hidden" name="categoryId" value={category.id} />
+            <button
+              type="submit"
+              class="text-red-500 hover:text-red-700 ml-1 w-4 h-4 flex items-center justify-center text-xs font-bold"
+              title="Delete category"
+            >
+              ✕
+            </button>
+          </form>
+        </div>
       {/each}
-    </ul>
+    </div>
   {/if}
 </div>
