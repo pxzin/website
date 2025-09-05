@@ -131,17 +131,12 @@
     }
   }
 
-  // Drawer functions
-  function openFormDrawer(formType: 'category') {
-    activeForm = formType;
-    showFormDrawer = true;
-
-    // Reset all form states
+  // Drawer functions (agora vazio, pois todos são modais)
+  function closeFormDrawer() {
+    showFormDrawer = false;
     showAccountForm = false;
     showCategoryForm = false;
-
-    // Show the requested form
-    if (formType === 'category') showCategoryForm = true;
+    showTransactionForm = false;
   }
 
   // Funções específicas para abrir modais
@@ -153,11 +148,8 @@
     showAccountForm = true;
   }
 
-  function closeFormDrawer() {
-    showFormDrawer = false;
-    showAccountForm = false;
-    showCategoryForm = false;
-    showTransactionForm = false;
+  function openCategoryModal() {
+    showCategoryForm = true;
   }
 
   // FAB (Floating Action Button) functions
@@ -174,8 +166,8 @@
       openTransactionModal();
     } else if (formType === 'account') {
       openAccountModal();
-    } else {
-      openFormDrawer(formType);
+    } else if (formType === 'category') {
+      openCategoryModal();
     }
   }
 
@@ -1050,11 +1042,10 @@
 
 <!-- Form Drawer -->
 <FormDrawer bind:show={showFormDrawer} on:close={closeFormDrawer}>
-  {#if showCategoryForm}
-    <CategoryForm {categories} bind:showForm={showCategoryForm} />
-  {/if}
+  <!-- Drawer agora vazio, todos são modais -->
 </FormDrawer>
 
 <!-- Modals independentes -->
 <AccountForm {accounts} bind:showForm={showAccountForm} />
+<CategoryForm {categories} bind:showForm={showCategoryForm} />
 <TransactionForm {accounts} {categories} bind:showForm={showTransactionForm} />

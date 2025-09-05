@@ -6,6 +6,7 @@
   export let title = '';
   export let maxWidth = 'max-w-2xl';
   export let closeOnClickOutside = true;
+  export let allowOverflow = false;
 
   const dispatch = createEventDispatcher();
 
@@ -40,7 +41,9 @@
   >
     <!-- Modal Content -->
     <div
-      class="bg-white rounded-lg shadow-xl w-full {maxWidth} max-h-[90vh] overflow-hidden"
+      class="bg-white rounded-lg shadow-xl w-full {maxWidth} max-h-[90vh] {allowOverflow
+        ? 'overflow-visible'
+        : 'overflow-hidden'}"
       transition:fly={{ y: 20, duration: 200 }}
       on:click|stopPropagation
     >
@@ -82,7 +85,7 @@
       {/if}
 
       <!-- Body -->
-      <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-140px)] relative">
         <slot />
       </div>
 
