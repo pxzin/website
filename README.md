@@ -16,7 +16,25 @@ npx sv create my-app
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Once you've created a project and installed dependencies with `pnpm install`, start a development server:
+
+```bash
+# Desenvolvimento completo (Turso + Vite) - Recomendado
+pnpm run dev:full
+
+# Desenvolvimento apenas Vite (sem banco local)
+pnpm dev
+
+# Alternativa via concurrently
+pnpm run dev:turso
+```
+
+### Scripts Disponíveis
+
+- **`pnpm run dev:full`** - Inicia Turso local + servidor de desenvolvimento com verificações automáticas
+- **`pnpm dev`** - Apenas servidor de desenvolvimento Vite
+- **`pnpm run dev:turso`** - Turso + Vite via concurrently (versão simples)
+- **`pnpm run turso:start`** - Apenas Turso local na porta 8080
 
 ```bash
 npm run dev
