@@ -169,11 +169,11 @@
 5. ✅ Criar `GettingStartedGuide.svelte`
 6. ✅ Criar `BackupSection.svelte`
 
-### **Fase 3: Componentes Complexos** (Médio risco)
+### **Fase 3: Componentes Complexos** ✅ (Médio risco)
 
-7. Criar `ActiveRecurrencesSection.svelte`
-8. Criar `ActiveInstallmentsSection.svelte`
-9. Criar `FloatingActionButton.svelte`
+7. ✅ Criar `ActiveRecurrencesSection.svelte`
+8. ✅ Criar `ActiveInstallmentsSection.svelte`
+9. ✅ Criar `FloatingActionButton.svelte`
 
 ### **Fase 4: Componente Principal** (Alto risco)
 

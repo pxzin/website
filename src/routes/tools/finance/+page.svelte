@@ -15,6 +15,9 @@
   import FinancePageHeader from '$lib/components/finance/page/FinancePageHeader.svelte';
   import GettingStartedGuide from '$lib/components/finance/page/GettingStartedGuide.svelte';
   import BackupSection from '$lib/components/finance/page/BackupSection.svelte';
+  import ActiveRecurrencesSection from '$lib/components/finance/page/ActiveRecurrencesSection.svelte';
+  import ActiveInstallmentsSection from '$lib/components/finance/page/ActiveInstallmentsSection.svelte';
+  import FloatingActionButton from '$lib/components/finance/page/FloatingActionButton.svelte';
   import {
     showError,
     showSuccess,
@@ -128,26 +131,11 @@
     }
   }
 
-  function closeFABMenu() {
-    showFABMenu = false;
-  }
-
-  // Close FAB menu when clicking outside
-  function handleDocumentClick(event: MouseEvent) {
-    const target = event.target as Element;
-    if (!target.closest('.fab-container')) {
-      closeFABMenu();
-    }
-  }
-
   // Helper function for delete transaction enhance
   function deleteTransactionEnhance() {
     return createDeleteTransactionEnhance();
   }
 </script>
-
-<!-- Global event listeners -->
-<svelte:window on:click={handleDocumentClick} />
 
 <section class="py-16 bg-white text-[var(--color-neutral-800)]">
   <div class="max-w-6xl mx-auto px-4">
@@ -167,189 +155,15 @@
     <!-- Backup Section Component -->
     <BackupSection {data} />
 
-    <!-- Active Recurrences Section -->
-    {#if recurrentTransactions.length > 0}
-      <div
-        class="bg-purple-50 p-6 rounded-lg shadow-md mb-8 border-l-4 border-purple-500"
-      >
-        <h2 class="text-2xl font-semibold mb-4 text-purple-800">
-          🔄 Active Recurrences
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {#each recurrentTransactions as recurrence}
-            <div
-              class="bg-white p-4 rounded-lg shadow-sm border border-purple-200"
-            >
-              <div class="flex items-center gap-2 mb-2">
-                {#if recurrence.type === 'income'}
-                  <span class="text-green-600 font-bold">↗️</span>
-                  <span class="font-medium text-green-700"
-                    >{recurrence.description}</span
-                  >
-                {:else}
-                  <span class="text-red-600 font-bold">↘️</span>
-                  <span class="font-medium text-red-700"
-                    >{recurrence.description}</span
-                  >
-                {/if}
-              </div>
+    <!-- Active Recurrences Section Component -->
+    <ActiveRecurrencesSection {recurrentTransactions} {categories} {accounts} />
 
-              <div class="text-sm text-gray-600 mb-2">
-                {getCategoryNameBound(recurrence.category_id)} • {getAccountNameBound(
-                  recurrence.account_id
-                )}
-              </div>
-
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full"
-                  >
-                    🔄 {formatRecurrenceInterval(
-                      recurrence.recurrence_interval
-                    )}
-                  </span>
-                  {#if recurrence.type === 'income'}
-                    <span
-                      class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
-                      >INCOME</span
-                    >
-                  {:else}
-                    <span
-                      class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
-                      >EXPENSE</span
-                    >
-                  {/if}
-                </div>
-                <div
-                  class="font-semibold text-lg"
-                  class:text-green-600={recurrence.type === 'income'}
-                  class:text-red-600={recurrence.type === 'expense'}
-                >
-                  {#if recurrence.type === 'expense'}
-                    -${Math.abs(recurrence.amount).toFixed(2)}
-                  {:else}
-                    +${recurrence.amount.toFixed(2)}
-                  {/if}
-                </div>
-              </div>
-
-              <div class="mt-2 text-xs text-gray-500">
-                Original Date: {recurrence.date}
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    <!-- Active Installments Section -->
-    {#if installmentTransactions.length > 0}
-      <div
-        class="bg-blue-50 p-6 rounded-lg shadow-md mb-8 border-l-4 border-blue-500"
-      >
-        <h2 class="text-2xl font-semibold mb-4 text-blue-800">
-          📊 Active Installments
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {#each installmentTransactions as installment}
-            {@const status = getInstallmentStatus(installment)}
-            {#if status && !status.isComplete}
-              <div
-                class="bg-white p-4 rounded-lg shadow-sm border border-blue-200"
-              >
-                <div class="flex items-center gap-2 mb-2">
-                  {#if installment.type === 'income'}
-                    <span class="text-green-600 font-bold">↗️</span>
-                    <span class="font-medium text-green-700"
-                      >{installment.description}</span
-                    >
-                  {:else}
-                    <span class="text-red-600 font-bold">↘️</span>
-                    <span class="font-medium text-red-700"
-                      >{installment.description}</span
-                    >
-                  {/if}
-                </div>
-
-                <div class="text-sm text-gray-600 mb-2">
-                  {getCategoryNameBound(installment.category_id)} • {getAccountNameBound(
-                    installment.account_id
-                  )}
-                </div>
-
-                <!-- Progress Bar -->
-                <div class="mb-2">
-                  <div class="flex justify-between text-xs text-gray-600 mb-1">
-                    <span>{status.paid}/{status.total} installments</span>
-                    <span>{status.percentage}%</span>
-                  </div>
-                  <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style="width: {status.percentage}%"
-                    ></div>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
-                    >
-                      📊 {status.remaining} remaining
-                    </span>
-                    {#if installment.type === 'income'}
-                      <span
-                        class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
-                        >INCOME</span
-                      >
-                    {:else}
-                      <span
-                        class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full"
-                        >EXPENSE</span
-                      >
-                    {/if}
-                  </div>
-                  <div class="text-right">
-                    <div
-                      class="font-semibold"
-                      class:text-green-600={installment.type === 'income'}
-                      class:text-red-600={installment.type === 'expense'}
-                    >
-                      {#if installment.type === 'expense'}
-                        -${Math.abs(installment.amount).toFixed(2)} total
-                      {:else}
-                        +${installment.amount.toFixed(2)} total
-                      {/if}
-                    </div>
-                    <div class="text-xs text-gray-500">
-                      {#if installment.type === 'expense'}
-                        -${Math.abs(
-                          installment.amount / installment.installments_total
-                        ).toFixed(2)}/installment
-                      {:else}
-                        +${(
-                          installment.amount / installment.installments_total
-                        ).toFixed(2)}/installment
-                      {/if}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Installment Details -->
-                <InstallmentDetails transaction={installment} />
-
-                <div class="mt-2 text-xs text-gray-500">
-                  Start: {installment.installment_start_date ||
-                    installment.date}
-                </div>
-              </div>
-            {/if}
-          {/each}
-        </div>
-      </div>
-    {/if}
+    <!-- Active Installments Section Component -->
+    <ActiveInstallmentsSection
+      {installmentTransactions}
+      {categories}
+      {accounts}
+    />
 
     <!-- Transactions List -->
     <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md mb-8">
@@ -647,75 +461,12 @@
   </div>
 </section>
 
-<!-- Floating Action Button -->
-<!-- Subtle backdrop when FAB menu is open -->
-{#if showFABMenu}
-  <div
-    class="fixed inset-0 z-20 bg-black/10 backdrop-blur-sm transition-all duration-300"
-  ></div>
-{/if}
-
-<div class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-30 fab-container">
-  <!-- FAB Menu Options -->
-  {#if showFABMenu}
-    <div
-      class="absolute bottom-16 right-0 space-y-3 transition-all duration-300 transform"
-    >
-      <!-- Add Transaction -->
-      <div class="animate-in slide-in-from-right-5 duration-300 delay-0">
-        <button
-          on:click={() => openFormDrawerFromFAB('transaction')}
-          class="flex items-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-        >
-          <span class="mr-2">💰</span>
-          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
-            >Add Transaction</span
-          >
-        </button>
-      </div>
-
-      <!-- Add Category -->
-      <div class="animate-in slide-in-from-right-5 duration-300 delay-75">
-        <button
-          on:click={() => openFormDrawerFromFAB('category')}
-          class="flex items-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-        >
-          <span class="mr-2">🏷️</span>
-          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
-            >Add Category</span
-          >
-        </button>
-      </div>
-
-      <!-- Add Account -->
-      <div class="animate-in slide-in-from-right-5 duration-300 delay-150">
-        <button
-          on:click={() => openFormDrawerFromFAB('account')}
-          class="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-        >
-          <span class="mr-2">🏦</span>
-          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
-            >Add Account</span
-          >
-        </button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Main FAB Button -->
-  <button
-    on:click={toggleFABMenu}
-    class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group transform hover:scale-110"
-    aria-label="Quick Actions"
-  >
-    <span
-      class="text-xl md:text-2xl transition-transform duration-300"
-      class:rotate-45={showFABMenu}
-    >
-      {showFABMenu ? '✕' : '+'}
-    </span>
-  </button>
-</div>
+<!-- Floating Action Button Component -->
+<FloatingActionButton
+  bind:showFABMenu
+  {toggleFABMenu}
+  {openFormDrawerFromFAB}
+/>
 
 <!-- Form Drawer -->
 <FormDrawer bind:show={showFormDrawer} on:close={closeFormDrawer}>
