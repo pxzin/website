@@ -782,4 +782,8 @@
 </Modal>
 
 <!-- Quick Category Creation - Reusing existing CategoryForm component -->
-<CategoryForm {categories} bind:showForm={showQuickCategoryModal} />
+<CategoryForm
+  {categories}
+  bind:showForm={showQuickCategoryModal}
+  hideListSection={true}
+/>

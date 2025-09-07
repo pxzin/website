@@ -141,7 +141,7 @@
       <h4 class="text-sm font-semibold text-gray-700 mb-3">
         Account Projections
       </h4>
-      <div class="space-y-2 max-h-32 overflow-y-auto">
+      <div class="space-y-2">
         {#each accountEntries as account}
           <div
             class="flex items-center justify-between py-2 px-3 bg-white rounded-lg border"

@@ -38,7 +38,10 @@
 
 <!-- Transactions List -->
 <div class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md mb-8">
-  <h2 class="text-2xl font-semibold mb-4">Transactions</h2>
+  <h2 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+    <span>💳</span>
+    Transactions
+  </h2>
 
   <!-- Tabs -->
   <div class="flex border-b border-gray-200 mb-4">
@@ -50,7 +53,7 @@
       class:text-gray-500={activeTransactionsTab !== 'current'}
       on:click={() => (activeTransactionsTab = 'current')}
     >
-      Current Month ({currentMonthTransactions.length})
+      📅 Current Month ({currentMonthTransactions.length})
     </button>
     <button
       class="px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ml-4"
@@ -60,7 +63,7 @@
       class:text-gray-500={activeTransactionsTab !== 'all'}
       on:click={() => (activeTransactionsTab = 'all')}
     >
-      All Transactions ({transactions.length})
+      📊 All Transactions ({transactions.length})
     </button>
   </div>
 
@@ -69,6 +72,7 @@
     <div class="space-y-2">
       {#if currentMonthTransactions.length === 0}
         <div class="text-center text-gray-500 py-8">
+          <div class="text-4xl mb-3">🚫</div>
           <p class="text-lg">No transactions found for this month</p>
           <p class="text-sm">Add transactions using the form above</p>
         </div>
@@ -193,6 +197,7 @@
     <div class="space-y-2">
       {#if transactions.length === 0}
         <div class="text-center text-gray-500 py-8">
+          <div class="text-4xl mb-3">💸</div>
           <p class="text-lg">No transactions found</p>
           <p class="text-sm">Add transactions using the form above</p>
         </div>

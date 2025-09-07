@@ -793,4 +793,121 @@ export const actions = {
       return fail(500, { error: 'Failed to resume recurrence' });
     }
   },
+
+  transfer: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const fromAccountId = data.get('fromAccountId') as string;
+      const toAccountId = data.get('toAccountId') as string;
+      const amount = parseFloat(data.get('amount') as string);
+      const description =
+        (data.get('description') as string) || 'Transferência entre contas';
+
+      if (!fromAccountId || !toAccountId || isNaN(amount) || amount <= 0) {
+        return fail(400, { error: 'Invalid transfer data' });
+      }
+
+      if (fromAccountId === toAccountId) {
+        return fail(400, { error: 'Cannot transfer to the same account' });
+      }
+
+      // Get account names for better descriptions
+      const [fromAccountResult, toAccountResult] = await Promise.all([
+        turso.execute({
+          sql: 'SELECT name FROM accounts WHERE id = ?',
+          args: [fromAccountId],
+        }),
+        turso.execute({
+          sql: 'SELECT name FROM accounts WHERE id = ?',
+          args: [toAccountId],
+        }),
+      ]);
+
+      if (
+        fromAccountResult.rows.length === 0 ||
+        toAccountResult.rows.length === 0
+      ) {
+        return fail(400, { error: 'Invalid account IDs' });
+      }
+
+      const fromAccountName = fromAccountResult.rows[0].name as string;
+      const toAccountName = toAccountResult.rows[0].name as string;
+
+      // Check if Transfer category exists, if not create it
+      let transferCategoryId = '';
+      const categoryResult = await turso.execute({
+        sql: 'SELECT id FROM categories WHERE name = ?',
+        args: ['Transfer'],
+      });
+
+      if (categoryResult.rows.length > 0) {
+        transferCategoryId = categoryResult.rows[0].id as string;
+      } else {
+        // Create Transfer category
+        transferCategoryId = crypto.randomUUID();
+        await turso.execute({
+          sql: 'INSERT INTO categories (id, name, type, icon) VALUES (?, ?, ?, ?)',
+          args: [transferCategoryId, 'Transfer', 'EXPENSE', '🔄'],
+        });
+      }
+
+      // Create the two transactions as a transfer
+      const debitTransactionId = crypto.randomUUID();
+      const creditTransactionId = crypto.randomUUID();
+
+      // Debit from source account (expense)
+      await turso.execute({
+        sql: 'INSERT INTO transactions (id, description, amount, date, account_id, category_id, type, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [
+          debitTransactionId,
+          `${description} (para ${toAccountName})`,
+          -Math.abs(amount), // Negative for outgoing
+          new Date().toISOString().split('T')[0],
+          fromAccountId,
+          transferCategoryId,
+          'expense',
+          0, // not recurrent
+          null, // no recurrence interval
+          null, // no installments
+          null, // no installments paid
+          null, // no installment start date
+        ],
+      });
+
+      // Credit to destination account (income)
+      await turso.execute({
+        sql: 'INSERT INTO transactions (id, description, amount, date, account_id, category_id, type, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [
+          creditTransactionId,
+          `${description} (de ${fromAccountName})`,
+          Math.abs(amount), // Positive for incoming
+          new Date().toISOString().split('T')[0],
+          toAccountId,
+          transferCategoryId,
+          'income',
+          0, // not recurrent
+          null, // no recurrence interval
+          null, // no installments
+          null, // no installments paid
+          null, // no installment start date
+        ],
+      });
+
+      // Update account balances
+      await turso.execute({
+        sql: 'UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?',
+        args: [Math.abs(amount), fromAccountId],
+      });
+
+      await turso.execute({
+        sql: 'UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?',
+        args: [Math.abs(amount), toAccountId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error processing transfer:', error);
+      return fail(500, { error: 'Failed to process transfer' });
+    }
+  },
 };

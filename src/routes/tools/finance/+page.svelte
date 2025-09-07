@@ -8,6 +8,7 @@
     CurrentMonthSummary,
     FormDrawer,
   } from '$lib/components';
+  import TransferForm from '$lib/components/finance/forms/TransferForm.svelte';
   import RecurrenceAdjustments from '$lib/components/finance/RecurrenceAdjustments.svelte';
   import RecurrenceInterruptions from '$lib/components/finance/RecurrenceInterruptions.svelte';
   // Import new page components
@@ -54,6 +55,7 @@
   let showAccountForm = false;
   let showCategoryForm = false;
   let showTransactionForm = false;
+  let showTransferForm = false;
 
   // Drawer functions (agora vazio, pois todos são modais)
   function closeFormDrawer() {
@@ -76,13 +78,17 @@
     showCategoryForm = true;
   }
 
+  function openTransferModal() {
+    showTransferForm = true;
+  }
+
   // FAB (Floating Action Button) functions
   function toggleFABMenu() {
     showFABMenu = !showFABMenu;
   }
 
   function openFormDrawerFromFAB(
-    formType: 'account' | 'category' | 'transaction'
+    formType: 'account' | 'category' | 'transaction' | 'transfer'
   ) {
     showFABMenu = false; // Close FAB menu
 
@@ -92,6 +98,8 @@
       openAccountModal();
     } else if (formType === 'category') {
       openCategoryModal();
+    } else if (formType === 'transfer') {
+      openTransferModal();
     }
   }
 
@@ -110,7 +118,10 @@
 
     // Check if any modal is currently open
     const isModalOpen =
-      showTransactionForm || showAccountForm || showCategoryForm;
+      showTransactionForm ||
+      showAccountForm ||
+      showCategoryForm ||
+      showTransferForm;
     if (isModalOpen) {
       return; // Don't handle shortcuts when a modal is open
     }
@@ -129,6 +140,16 @@
         case 'a':
           event.preventDefault();
           openAccountModal();
+          break;
+      }
+    }
+
+    // Handle Ctrl+Shift combinations
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
+      switch (event.key.toLowerCase()) {
+        case 't': // Transfer with Ctrl+Shift+T
+          event.preventDefault();
+          openTransferModal();
           break;
       }
     }
@@ -189,7 +210,7 @@
 </script>
 
 <svelte:head>
-  <title>FinTrack - Financial Management Tool</title>
+  <title>💰 FinTrack - Financial Management Tool</title>
   <link
     rel="icon"
     type="image/png"
@@ -267,5 +288,10 @@
 
 <!-- Modals independentes -->
 <AccountForm {accounts} bind:showForm={showAccountForm} />
-<CategoryForm {categories} bind:showForm={showCategoryForm} />
+<CategoryForm {categories} {transactions} bind:showForm={showCategoryForm} />
 <TransactionForm {accounts} {categories} bind:showForm={showTransactionForm} />
+
+<!-- Transfer Modal -->
+{#if showTransferForm}
+  <TransferForm {accounts} onClose={() => (showTransferForm = false)} />
+{/if}

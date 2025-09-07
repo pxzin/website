@@ -3,7 +3,7 @@
   export let showFABMenu: boolean = false;
   export let toggleFABMenu: () => void;
   export let openFormDrawerFromFAB: (
-    formType: 'account' | 'category' | 'transaction'
+    formType: 'account' | 'category' | 'transaction' | 'transfer'
   ) => void;
 </script>
 
@@ -66,6 +66,19 @@
           <span class="mr-2">🏦</span>
           <span class="text-xs md:text-sm font-medium whitespace-nowrap"
             >Add Account</span
+          >
+        </button>
+      </div>
+
+      <!-- Transfer -->
+      <div class="animate-in slide-in-from-right-5 duration-300 delay-225">
+        <button
+          on:click={() => openFormDrawerFromFAB('transfer')}
+          class="flex items-center bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        >
+          <span class="mr-2">🔄</span>
+          <span class="text-xs md:text-sm font-medium whitespace-nowrap"
+            >Transfer</span
           >
         </button>
       </div>

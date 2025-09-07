@@ -77,10 +77,52 @@ export const createTables = async () => {
       { sql: createRecurrenceAdjustmentsTableQuery, args: [] },
     ]);
 
+    // Migrate transactions table to add type column if missing
+    await migrateTransactionsTypeColumn();
+
     // Skip migration for now to avoid conflicts
     // await migrateAccountTypes();
   } catch (error) {
     console.error('Error creating table on startup:', error);
+  }
+};
+
+const migrateTransactionsTypeColumn = async () => {
+  try {
+    // Check if the type column exists
+    const schemaResult = await turso.execute({
+      sql: 'PRAGMA table_info(transactions)',
+      args: [],
+    });
+
+    const columns = schemaResult.rows.map((row) => row.name);
+    const hasTypeColumn = columns.includes('type');
+
+    if (!hasTypeColumn) {
+      console.log('Adding type column to transactions table...');
+
+      // Add the type column with default value
+      await turso.execute({
+        sql: "ALTER TABLE transactions ADD COLUMN type TEXT DEFAULT 'expense'",
+        args: [],
+      });
+
+      // Add the check constraint
+      // Note: SQLite doesn't support adding CHECK constraints via ALTER TABLE
+      // So we'll handle validation in the application code
+
+      // Update existing transactions to have proper types based on amount
+      await turso.execute({
+        sql: "UPDATE transactions SET type = CASE WHEN amount > 0 THEN 'income' ELSE 'expense' END WHERE type IS NULL OR type = ''",
+        args: [],
+      });
+
+      console.log('Type column added successfully to transactions table.');
+    } else {
+      console.log('Type column already exists in transactions table.');
+    }
+  } catch (error) {
+    console.error('Error migrating transactions type column:', error);
   }
 };
 
@@ -154,6 +196,7 @@ const migrateAccountTypes = async () => {
 							date TEXT NOT NULL,
 							account_id TEXT NOT NULL,
 							category_id TEXT NOT NULL,
+							type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
 							is_recurrent INTEGER DEFAULT 0,
 							recurrence_interval TEXT CHECK(recurrence_interval IN ('MONTHLY', 'YEARLY')),
 							installments_total INTEGER,
@@ -186,8 +229,8 @@ const migrateAccountTypes = async () => {
         // Restore transactions data if it existed
         for (const transaction of existingTransactions.rows) {
           await turso.execute({
-            sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
-						  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            sql: `INSERT INTO transactions (id, description, amount, date, account_id, category_id, type, is_recurrent, recurrence_interval, installments_total, installments_paid, installment_start_date) 
+						  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
               transaction.id,
               transaction.description,
@@ -195,6 +238,7 @@ const migrateAccountTypes = async () => {
               transaction.date,
               transaction.account_id,
               transaction.category_id,
+              transaction.type || 'expense', // Default to 'expense' if type is missing
               transaction.is_recurrent,
               transaction.recurrence_interval,
               transaction.installments_total,
