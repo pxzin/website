@@ -5,6 +5,7 @@
   import { onMount } from 'svelte';
   import { showError, showSuccess } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
+  import CategoryForm from '$lib/components/finance/CategoryForm.svelte';
 
   export let accounts: any[] = [];
   export let categories: any[] = [];
@@ -21,6 +22,9 @@
   let newTransactionInstallmentsTotal: number | null = null;
   let newTransactionInstallmentsPaid: number | null = null;
   let newTransactionInstallmentStartDate: string | null = null;
+
+  // Quick category modal - using existing CategoryForm component
+  let showQuickCategoryModal = false;
 
   // New reactive properties for improved UX
   $: selectedCategory = categories.find(
@@ -511,20 +515,30 @@
           for="transaction-category"
           class="block text-sm font-medium text-gray-700 mb-2">Category</label
         >
-        <select
-          id="transaction-category"
-          name="categoryId"
-          bind:value={newTransactionCategoryId}
-          class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary-accent)] focus:border-transparent transition-all duration-200"
-          required
-        >
-          <option value="">📁 Select Category</option>
-          {#each categories as category}
-            <option value={category.id}
-              >{category.icon || '�'} {category.name}</option
-            >
-          {/each}
-        </select>
+        <div class="flex gap-2">
+          <select
+            id="transaction-category"
+            name="categoryId"
+            bind:value={newTransactionCategoryId}
+            class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-[var(--color-primary-accent)] focus:border-transparent transition-all duration-200"
+            required
+          >
+            <option value="">📁 Select Category</option>
+            {#each categories as category}
+              <option value={category.id}
+                >{category.icon || '📁'} {category.name}</option
+              >
+            {/each}
+          </select>
+          <button
+            type="button"
+            on:click={() => (showQuickCategoryModal = true)}
+            class="px-4 py-3 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors duration-200 whitespace-nowrap font-medium"
+            title="Adicionar nova categoria"
+          >
+            ➕ Add
+          </button>
+        </div>
       </div>
 
       <!-- Transaction Type -->
@@ -766,3 +780,6 @@
     </div>
   </form>
 </Modal>
+
+<!-- Quick Category Creation - Reusing existing CategoryForm component -->
+<CategoryForm {categories} bind:showForm={showQuickCategoryModal} />

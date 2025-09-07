@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import {
     AccountForm,
     CategoryForm,
@@ -94,6 +95,45 @@
     }
   }
 
+  // Keyboard shortcuts for FAB actions
+  function handleKeyboardShortcuts(event: KeyboardEvent) {
+    // Only handle shortcuts when not typing in an input/textarea/select
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.contentEditable === 'true'
+    ) {
+      return;
+    }
+
+    // Check if any modal is currently open
+    const isModalOpen =
+      showTransactionForm || showAccountForm || showCategoryForm;
+    if (isModalOpen) {
+      return; // Don't handle shortcuts when a modal is open
+    }
+
+    // Handle shortcuts (Ctrl+Key or Cmd+Key for better UX)
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key.toLowerCase()) {
+        case 't':
+          event.preventDefault();
+          openTransactionModal();
+          break;
+        case 'k': // Changed from 'c' to avoid conflict with copy
+          event.preventDefault();
+          openCategoryModal();
+          break;
+        case 'a':
+          event.preventDefault();
+          openAccountModal();
+          break;
+      }
+    }
+  }
+
   // Function to dynamically change favicon
   function changeFavicon() {
     if (typeof document !== 'undefined') {
@@ -126,9 +166,21 @@
   }
 
   // Change favicon when component mounts and restore when destroyed
-  import { onMount, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte'; // onMount já importado no topo
   onMount(() => {
     changeFavicon();
+
+    // Add keyboard shortcuts listener
+    const handleKeydown = (event: KeyboardEvent) => {
+      handleKeyboardShortcuts(event);
+    };
+
+    document.addEventListener('keydown', handleKeydown);
+
+    // Cleanup function
+    return () => {
+      document.removeEventListener('keydown', handleKeydown);
+    };
   });
 
   onDestroy(() => {
