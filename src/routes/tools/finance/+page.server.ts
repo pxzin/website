@@ -1068,4 +1068,75 @@ export const actions = {
       return fail(500, { error: 'Failed to remove recurrence' });
     }
   },
+
+  updateTransactionAccount: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+      const newAccountId = data.get('newAccountId') as string;
+
+      if (!transactionId || !newAccountId) {
+        return fail(400, {
+          error: 'Transaction ID and new account ID are required',
+        });
+      }
+
+      // Get transaction details before updating
+      const transactionResult = await turso.execute({
+        sql: 'SELECT amount, account_id, installments_total FROM transactions WHERE id = ?',
+        args: [transactionId],
+      });
+
+      if (transactionResult.rows.length === 0) {
+        return fail(404, { error: 'Transaction not found' });
+      }
+
+      const transaction = transactionResult.rows[0];
+      const amount = transaction.amount as number;
+      const oldAccountId = transaction.account_id as string;
+      const installmentsTotal = transaction.installments_total as number | null;
+
+      // Verify new account exists
+      const accountResult = await turso.execute({
+        sql: 'SELECT id FROM accounts WHERE id = ?',
+        args: [newAccountId],
+      });
+
+      if (accountResult.rows.length === 0) {
+        return fail(400, { error: 'Invalid new account ID' });
+      }
+
+      // Calculate the actual balance impact (for installments, it's the installment amount)
+      let balanceImpact = amount;
+      if (installmentsTotal && installmentsTotal > 1) {
+        balanceImpact = amount / installmentsTotal;
+      }
+
+      // Update transaction account
+      await turso.execute({
+        sql: 'UPDATE transactions SET account_id = ? WHERE id = ?',
+        args: [newAccountId, transactionId],
+      });
+
+      // Update account balances
+      // Remove impact from old account
+      await turso.execute({
+        sql: 'UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?',
+        args: [balanceImpact, oldAccountId],
+      });
+
+      // Add impact to new account
+      await turso.execute({
+        sql: 'UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?',
+        args: [balanceImpact, newAccountId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating transaction account:', error);
+      return fail(500, {
+        error: 'Failed to transfer transaction to new account',
+      });
+    }
+  },
 };

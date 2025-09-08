@@ -6,9 +6,12 @@
   export let actualExpenses: number;
   export let netFlow: number;
   export let currentProjection: any = null;
+  export let expensesIncurred: number = 0;
+  export let cashFlowImpact: number = 0;
+  export let creditCardExpenses: number = 0;
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
   <!-- Actual Income -->
   <div
     class="bg-green-50 border border-green-200 rounded-lg p-4 text-center"
@@ -30,23 +33,45 @@
     {/if}
   </div>
 
-  <!-- Actual Expenses -->
+  <!-- Expenses Incurred (Total) -->
   <div
     class="bg-red-50 border border-red-200 rounded-lg p-4 text-center"
     in:fly={{ y: 20, duration: 400, delay: 200 }}
   >
     <div class="text-2xl mb-2">💸</div>
     <h3 class="text-sm font-semibold text-red-700 uppercase tracking-wide mb-1">
-      Actual Expenses
+      Expenses Incurred
     </h3>
     <p class="text-2xl font-bold text-red-800">
-      -${Math.abs(actualExpenses).toFixed(2)}
+      -${expensesIncurred.toFixed(2)}
     </p>
     {#if currentProjection}
       <p class="text-xs text-red-600 mt-1">
         of ${currentProjection.total_expenses.toFixed(2)} projected
       </p>
     {/if}
+    {#if creditCardExpenses > 0}
+      <p class="text-xs text-orange-600 mt-1">
+        💳 ${creditCardExpenses.toFixed(2)} on credit cards
+      </p>
+    {/if}
+  </div>
+
+  <!-- Cash Flow Impact -->
+  <div
+    class="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center"
+    in:fly={{ y: 20, duration: 400, delay: 250 }}
+  >
+    <div class="text-2xl mb-2">💳</div>
+    <h3
+      class="text-sm font-semibold text-orange-700 uppercase tracking-wide mb-1"
+    >
+      Cash Flow Impact
+    </h3>
+    <p class="text-2xl font-bold text-orange-800">
+      -${cashFlowImpact.toFixed(2)}
+    </p>
+    <p class="text-xs text-orange-600 mt-1">Excluding credit card expenses</p>
   </div>
 
   <!-- Net Flow -->

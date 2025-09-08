@@ -2,15 +2,11 @@
   import MonthlyHeader from './monthly/MonthlyHeader.svelte';
   import MonthlyStatsCards from './monthly/MonthlyStatsCards.svelte';
   import FinancialInsights from './monthly/FinancialInsights.svelte';
-  import CategoryBreakdown from './monthly/CategoryBreakdown.svelte';
-  import RecentTransactions from './monthly/RecentTransactions.svelte';
   import {
     getCurrentMonthTransactions,
     calculateMonthlyStats,
     getCurrentMonthProjection,
     generateFinancialInsights,
-    getCategoryBreakdown,
-    getRecentTransactions,
     calculateMonthProgress,
     calculateAdvancedStats,
     getCurrentMonthInfo,
@@ -20,16 +16,24 @@
   export let projections: any[];
   export let transactions: any[];
   export let categories: any[];
+  export let accounts: any[] = []; // Add accounts prop
 
   const currentDate = new Date();
 
   // Calculate all derived data using utility functions
   $: currentProjection = getCurrentMonthProjection(projections);
   $: currentMonthTransactions = getCurrentMonthTransactions(transactions);
-  $: monthlyStats = calculateMonthlyStats(currentMonthTransactions);
+  $: monthlyStats = calculateMonthlyStats(
+    currentMonthTransactions,
+    accounts,
+    transactions
+  );
   $: actualIncome = monthlyStats.actualIncome;
   $: actualExpenses = monthlyStats.actualExpenses;
   $: netFlow = monthlyStats.netFlow;
+  $: expensesIncurred = monthlyStats.expensesIncurred;
+  $: cashFlowImpact = monthlyStats.cashFlowImpact;
+  $: creditCardExpenses = monthlyStats.creditCardExpenses;
   $: monthProgress = calculateMonthProgress();
   $: monthInfo = getCurrentMonthInfo();
   $: remainingDays = monthInfo.remainingDays;
@@ -51,11 +55,6 @@
     burnRate,
     currentProjection
   );
-  $: categoryBreakdown = getCategoryBreakdown(
-    currentMonthTransactions,
-    categories
-  );
-  $: recentTransactions = getRecentTransactions(currentMonthTransactions);
 </script>
 
 <div class="bg-white border border-gray-200 rounded-lg p-0 shadow-sm">
@@ -92,21 +91,14 @@
         {actualExpenses}
         {netFlow}
         {currentProjection}
+        {expensesIncurred}
+        {cashFlowImpact}
+        {creditCardExpenses}
       />
 
       <!-- Financial Insights -->
       <div class="mt-6">
         <FinancialInsights {insights} />
-      </div>
-
-      <!-- Category Breakdown -->
-      <div class="mt-6">
-        <CategoryBreakdown {categoryBreakdown} />
-      </div>
-
-      <!-- Recent Transactions -->
-      <div class="mt-6">
-        <RecentTransactions {recentTransactions} />
       </div>
     {/if}
   </div>

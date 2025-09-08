@@ -237,6 +237,7 @@
       {projections}
       {transactions}
       {categories}
+      {accounts}
     />
 
     <!-- 2. Projections Section -->

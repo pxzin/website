@@ -267,6 +267,71 @@
                   </form>
                 {/if}
 
+                <!-- Transfer Account dropdown -->
+                <details class="relative">
+                  <summary
+                    class="text-orange-500 text-sm hover:underline cursor-pointer list-none"
+                  >
+                    🔄 Transfer Account
+                  </summary>
+                  <div
+                    class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10 min-w-[200px]"
+                  >
+                    <div class="space-y-2">
+                      <form
+                        method="POST"
+                        action="?/updateTransactionAccount"
+                        use:enhance={({ formData }) => {
+                          return async ({ result }: any) => {
+                            if (result.type === 'failure') {
+                              console.error(
+                                'Failed to transfer transaction:',
+                                result.data?.error
+                              );
+                            } else if (result.type === 'success') {
+                              window.location.reload();
+                            }
+                          };
+                        }}
+                        class="space-y-2"
+                      >
+                        <input
+                          type="hidden"
+                          name="transactionId"
+                          value={transaction.id}
+                        />
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-gray-700 mb-1"
+                          >
+                            New Account
+                          </label>
+                          <select
+                            name="newAccountId"
+                            required
+                            class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          >
+                            <option value="">Select Account</option>
+                            {#each accounts as account}
+                              {#if account.id !== transaction.account_id}
+                                <option value={account.id}
+                                  >{account.name}</option
+                                >
+                              {/if}
+                            {/each}
+                          </select>
+                        </div>
+                        <button
+                          type="submit"
+                          class="w-full bg-orange-600 text-white px-2 py-1 text-xs rounded hover:bg-orange-700"
+                        >
+                          Transfer to Account
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </details>
+
                 <!-- Delete button -->
                 <form
                   method="POST"
@@ -490,6 +555,71 @@
                     </button>
                   </form>
                 {/if}
+
+                <!-- Transfer Account dropdown -->
+                <details class="relative">
+                  <summary
+                    class="text-orange-500 text-sm hover:underline cursor-pointer list-none"
+                  >
+                    🔄 Transfer Account
+                  </summary>
+                  <div
+                    class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10 min-w-[200px]"
+                  >
+                    <div class="space-y-2">
+                      <form
+                        method="POST"
+                        action="?/updateTransactionAccount"
+                        use:enhance={({ formData }) => {
+                          return async ({ result }: any) => {
+                            if (result.type === 'failure') {
+                              console.error(
+                                'Failed to transfer transaction:',
+                                result.data?.error
+                              );
+                            } else if (result.type === 'success') {
+                              window.location.reload();
+                            }
+                          };
+                        }}
+                        class="space-y-2"
+                      >
+                        <input
+                          type="hidden"
+                          name="transactionId"
+                          value={transaction.id}
+                        />
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-gray-700 mb-1"
+                          >
+                            New Account
+                          </label>
+                          <select
+                            name="newAccountId"
+                            required
+                            class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          >
+                            <option value="">Select Account</option>
+                            {#each accounts as account}
+                              {#if account.id !== transaction.account_id}
+                                <option value={account.id}
+                                  >{account.name}</option
+                                >
+                              {/if}
+                            {/each}
+                          </select>
+                        </div>
+                        <button
+                          type="submit"
+                          class="w-full bg-orange-600 text-white px-2 py-1 text-xs rounded hover:bg-orange-700"
+                        >
+                          Transfer to Account
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </details>
 
                 <!-- Delete button -->
                 <form

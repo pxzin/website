@@ -4,6 +4,10 @@ export interface MonthlyStats {
   actualIncome: number;
   actualExpenses: number;
   netFlow: number;
+  // New fields for better credit card handling
+  expensesIncurred: number; // All expenses recorded, regardless of account type
+  cashFlowImpact: number; // Only expenses that actually affected cash flow
+  creditCardExpenses: number; // Expenses on credit cards not yet paid
 }
 
 export interface AdvancedStats {
@@ -84,9 +88,66 @@ export function getCurrentMonthProjection(projections: any[]): any | null {
   );
 }
 
+/**
+ * Calculate monthly installment impact for a specific month
+ */
+function calculateMonthlyInstallmentImpact(
+  transactions: any[],
+  targetMonth: number,
+  targetYear: number,
+  accounts?: any[]
+): { totalImpact: number; creditCardImpact: number } {
+  let totalImpact = 0;
+  let creditCardImpact = 0;
+
+  const installmentTransactions = transactions.filter(
+    (tx) => tx.installments_total && tx.installments_total > 1
+  );
+
+  installmentTransactions.forEach((tx) => {
+    const startDate = new Date(tx.installment_start_date || tx.date);
+    const totalInstallments = tx.installments_total;
+    const amountPerInstallment = Math.abs(tx.amount / totalInstallments);
+
+    // Check each potential installment
+    for (let i = 0; i < totalInstallments; i++) {
+      const installmentDate = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth() + i,
+        startDate.getDate()
+      );
+
+      // If this installment is due in the target month
+      if (
+        installmentDate.getMonth() === targetMonth &&
+        installmentDate.getFullYear() === targetYear
+      ) {
+        totalImpact += amountPerInstallment;
+
+        // Check if it's a credit card transaction
+        if (accounts) {
+          const account = accounts.find((acc) => acc.id === tx.account_id);
+          if (account?.type === 'CREDIT_CARD') {
+            creditCardImpact += amountPerInstallment;
+          }
+        }
+      }
+    }
+  });
+
+  return { totalImpact, creditCardImpact };
+}
+
 export function calculateMonthlyStats(
-  currentMonthTransactions: any[]
+  currentMonthTransactions: any[],
+  accounts?: any[],
+  allTransactions?: any[]
 ): MonthlyStats {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+
+  // Calculate income and expenses from current month transactions
   const actualIncome = currentMonthTransactions
     .filter((t: any) => t.type === 'income')
     .reduce((sum: number, t: any) => {
@@ -105,9 +166,45 @@ export function calculateMonthlyStats(
       return sum + t.amount;
     }, 0);
 
-  const netFlow = actualIncome - Math.abs(actualExpenses);
+  // Calculate installment impact for current month from ALL transactions
+  const installmentData = allTransactions
+    ? calculateMonthlyInstallmentImpact(
+        allTransactions,
+        currentMonth,
+        currentYear,
+        accounts
+      )
+    : { totalImpact: 0, creditCardImpact: 0 };
 
-  return { actualIncome, actualExpenses, netFlow };
+  // Calculate expenses incurred (all expenses from current month + installments due this month)
+  const directExpenses = Math.abs(actualExpenses);
+  const installmentExpenses = installmentData.totalImpact;
+  const expensesIncurred = directExpenses + installmentExpenses;
+
+  // Calculate credit card expenses using actual account balance
+  const creditCardExpenses = accounts
+    ? accounts
+        .filter((acc: any) => acc.type === 'CREDIT_CARD')
+        .reduce((sum: number, acc: any) => {
+          // For credit cards, use the absolute value of the negative balance
+          // This represents the amount currently owed on the card
+          return sum + Math.abs(Math.min(0, acc.current_balance));
+        }, 0)
+    : 0;
+
+  // Calculate cash flow impact (expenses that actually affected available cash)
+  const cashFlowImpact = expensesIncurred - creditCardExpenses;
+
+  const netFlow = actualIncome - expensesIncurred;
+
+  return {
+    actualIncome,
+    actualExpenses,
+    netFlow,
+    expensesIncurred,
+    cashFlowImpact,
+    creditCardExpenses,
+  };
 }
 
 export function calculateMonthProgress(): number {
