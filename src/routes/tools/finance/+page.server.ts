@@ -162,7 +162,17 @@ export const actions = {
         args: [id, name, 'EXPENSE', icon], // Default type for compatibility
       });
 
-      return { success: true };
+      const newCategory = {
+        id,
+        name,
+        type: 'EXPENSE',
+        icon,
+      };
+
+      return {
+        success: true,
+        category: newCategory,
+      };
     } catch (error) {
       console.error('Error adding category:', error);
       return fail(500, { error: 'Failed to add category' });

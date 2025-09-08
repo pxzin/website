@@ -3,11 +3,15 @@
   import { invalidateAll } from '$app/navigation';
   import { showError, showSuccess } from '$lib/stores/toast';
   import Modal from '$lib/components/Modal.svelte';
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
 
   export let categories: any[] = [];
   export let showForm = false;
   export let hideListSection = false; // New prop to hide the list section
   export let transactions: any[] = []; // Add transactions prop to calculate category balances
+  export let actionName = 'addCategory'; // Action name to use (addCategory or createCategory)
 
   // Calculate category usage and balances
   $: categoryStats = categories
@@ -44,68 +48,238 @@
 
   // Available icons for categories
   const availableIcons = [
+    // Money & Finance
     '💰',
+    '💸',
+    '💵',
+    '💴',
+    '💶',
+    '💷',
+    '🏦',
+    '💳',
+    '📈',
+    '📉',
+    '💎',
+    '🪙',
+
+    // Housing & Home
     '🏠',
-    '🍽️',
-    '🚗',
-    '🎮',
-    '👕',
-    '💊',
-    '🎓',
-    '✈️',
-    '🎬',
-    '🏋️',
-    '🐕',
-    '🎁',
+    '🏡',
+    '🏢',
+    '🏬',
+    '🏪',
+    '🛏️',
+    '🛋️',
+    '🚿',
     '🔧',
-    '📱',
+    '🔨',
+    '🪑',
+    '🚪',
+
+    // Food & Dining
+    '🍽️',
+    '🍕',
+    '🍔',
+    '🍟',
+    '🍗',
+    '🥗',
+    '🍜',
+    '🍱',
     '☕',
-    '🌟',
-    '💻',
-    '🎨',
-    '📚',
+    '🍺',
+    '🍷',
+    '🥤',
+    '�',
+    '🥐',
+    '🍎',
+    '🥕',
+    '🍞',
+    '🧄',
+    '�',
+
+    // Transportation
+    '🚗',
+    '🚕',
+    '🚙',
+    '🚌',
+    '🚎',
+    '🚐',
+    '🚛',
+    '🚚',
+    '⛽',
+    '🚇',
+    '✈️',
+    '�',
+    '�',
+    '🚁',
+    '⛵',
+    '🚢',
+    '🚤',
+
+    // Health & Medical
+    '💊',
+    '�',
+    '⚕️',
+    '🩺',
+    '💉',
+    '🦷',
+    '👓',
+    '🧴',
+    '🧼',
+    '🏃',
+    '🏋️',
+    '🧘',
+
+    // Entertainment & Leisure
+    '🎮',
+    '🎬',
     '🎵',
+    '🎸',
+    '🎹',
+    '🎤',
+    '🎧',
+    '📺',
+    '📱',
+    '💻',
+    '🎯',
+    '🎲',
+    '🎪',
+    '🎭',
+    '�',
+    '📚',
+    '📖',
+    '✏️',
+    '🖊️',
+    '🎒',
+
+    // Shopping & Clothes
+    '👕',
+    '👖',
+    '👗',
+    '👠',
+    '�',
+    '🧥',
+    '👜',
+    '💄',
+    '💍',
+    '⌚',
+    '🕶️',
+    '🧢',
+    '👑',
+    '�',
+
+    // Education & Work
+    '🎓',
+    '📝',
+    '📊',
+    '📋',
+    '💼',
+    '🖥️',
+    '⌨️',
+    '🖱️',
+    '📞',
+    '📠',
+    '🗂️',
+    '�',
+    '✂️',
+    '�',
+    '🔍',
+
+    // Pets & Animals
+    '🐕',
+    '🐈',
+    '🐠',
+    '🐦',
+    '🐹',
+    '🐰',
+    '🦎',
+    '🐢',
+    '🦜',
+    '🦮',
+    '🐾',
+
+    // Gifts & Special
+    '🎁',
+    '🎉',
+    '🎊',
+    '💌',
+    '❤️',
+    '💝',
+    '🌹',
+    '🎈',
+    '�',
+    '🥇',
+    '⭐',
+    '��',
+
+    // Travel & Vacation
     '🏖️',
+    '🏔️',
+    '🏕️',
+    '�️',
+    '🧳',
+    '📷',
+    '🎫',
+    '🏨',
+    '🛫',
+    '🛬',
+    '🚢',
+    '⛱️',
+
+    // Technology
+    '📱',
+    '��',
+    '🖥️',
+    '⌨️',
+    '🖱️',
+    '💾',
+    '💿',
+    '📀',
+    '🔌',
+    '🔋',
+    '📡',
+    '📻',
+
+    // Utilities & Services
+    '💡',
+    '🔋',
+    '📞',
+    '📧',
+    '📮',
+    '📬',
+    '🗞️',
+    '📰',
+    '🔒',
     '🔑',
+    '�',
+    '⚡',
+
+    // Nature & Environment
+    '🌱',
+    '🌳',
+    '�',
+    '🌺',
+    '🌻',
+    '🌍',
+    '�',
+    '☀️',
+    '⭐',
+    '🌈',
+    '❄️',
+    '�',
+
+    // Default & Misc
     '📁',
+    '📂',
+    '❓',
+    '❗',
+    '💭',
+    '💬',
+    '🎯',
+    '🔮',
+    '🎪',
+    '🎭',
   ];
-
-  async function handleSubmit(event: Event) {
-    event.preventDefault();
-    if (isSubmitting) return;
-
-    if (!newCategoryName.trim()) {
-      showError('Category name is required');
-      return;
-    }
-
-    isSubmitting = true;
-
-    try {
-      const formData = new FormData();
-      formData.append('name', newCategoryName.trim());
-      formData.append('icon', selectedIcon);
-
-      const response = await fetch('/tools/finance?/addCategory', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        showSuccess('Category added successfully!');
-        await invalidateAll();
-        resetForm();
-      } else {
-        const result = await response.json();
-        showError(result.message || 'Failed to add category');
-      }
-    } catch (error) {
-      console.error('Error adding category:', error);
-      showError('Failed to add category');
-    } finally {
-      isSubmitting = false;
-    }
-  }
 
   function resetForm() {
     newCategoryName = '';
@@ -136,7 +310,38 @@
     </div>
   </svelte:fragment>
 
-  <form on:submit={handleSubmit} class="space-y-4">
+  <form
+    method="POST"
+    action="?/{actionName}"
+    use:enhance={({ formData }) => {
+      isSubmitting = true;
+
+      return async ({ result }: any) => {
+        isSubmitting = false;
+
+        if (result.type === 'success' && result.data?.category) {
+          const newCategory = result.data.category;
+
+          showSuccess('Category added successfully!');
+          await invalidateAll();
+
+          // Dispatch event with the new category data
+          dispatch('categoryCreated', { category: newCategory });
+
+          resetForm();
+        } else if (result.type === 'failure') {
+          showError(result.data?.message || 'Failed to add category');
+        } else {
+          showError('Failed to add category');
+        }
+      };
+    }}
+    class="space-y-4"
+  >
+    <!-- Hidden fields for form data -->
+    <input type="hidden" name="name" bind:value={newCategoryName} />
+    <input type="hidden" name="icon" bind:value={selectedIcon} />
+
     <!-- Category Name -->
     <div>
       <label

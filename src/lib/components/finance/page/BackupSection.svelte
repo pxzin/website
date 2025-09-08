@@ -38,7 +38,7 @@
 <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
   <h3 class="text-lg font-semibold text-gray-900 mb-4">⚙️ Data Management</h3>
 
-  <div class="grid md:grid-cols-2 gap-6">
+  <div class="grid md:grid-cols-3 gap-6">
     <!-- Export Backup -->
     <div>
       <h4 class="font-semibold mb-2">📤 Export Backup</h4>
@@ -68,6 +68,20 @@
           Import Data
         </button>
       </div>
+    </div>
+
+    <!-- Import CSV -->
+    <div>
+      <h4 class="font-semibold mb-2">📊 Import CSV</h4>
+      <p class="text-sm text-gray-600 mb-3">
+        Import transactions from bank statements (Nubank, etc.) in CSV format.
+      </p>
+      <a
+        href="/tools/finance/import"
+        class="block w-full text-sm bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 text-center"
+      >
+        Import CSV
+      </a>
     </div>
   </div>
 
