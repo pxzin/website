@@ -969,4 +969,103 @@ export const actions = {
       return fail(500, { error: 'Failed to update account' });
     }
   },
+
+  makeRecurrent: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+      const recurrenceInterval = data.get('recurrenceInterval') as string;
+
+      if (!transactionId || !recurrenceInterval) {
+        return fail(400, {
+          error: 'Transaction ID and recurrence interval are required',
+        });
+      }
+
+      // Validate recurrence interval (database only supports MONTHLY and YEARLY)
+      const validIntervals = ['monthly', 'yearly'];
+      if (!validIntervals.includes(recurrenceInterval)) {
+        return fail(400, {
+          error:
+            'Invalid recurrence interval. Only monthly and yearly are supported.',
+        });
+      }
+
+      // Convert to uppercase for database constraint
+      const dbRecurrenceInterval = recurrenceInterval.toUpperCase();
+
+      // Check if transaction exists and is not already recurrent
+      const transactionResult = await turso.execute({
+        sql: 'SELECT is_recurrent FROM transactions WHERE id = ?',
+        args: [transactionId],
+      });
+
+      if (transactionResult.rows.length === 0) {
+        return fail(404, { error: 'Transaction not found' });
+      }
+
+      const isCurrentlyRecurrent = Boolean(
+        transactionResult.rows[0].is_recurrent
+      );
+      if (isCurrentlyRecurrent) {
+        return fail(400, { error: 'Transaction is already recurrent' });
+      }
+
+      // Update transaction to make it recurrent
+      await turso.execute({
+        sql: 'UPDATE transactions SET is_recurrent = 1, recurrence_interval = ? WHERE id = ?',
+        args: [dbRecurrenceInterval, transactionId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error making transaction recurrent:', error);
+      return fail(500, { error: 'Failed to make transaction recurrent' });
+    }
+  },
+
+  removeRecurrence: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const transactionId = data.get('transactionId') as string;
+
+      if (!transactionId) {
+        return fail(400, { error: 'Transaction ID is required' });
+      }
+
+      // Check if transaction exists and is recurrent
+      const transactionResult = await turso.execute({
+        sql: 'SELECT is_recurrent FROM transactions WHERE id = ?',
+        args: [transactionId],
+      });
+
+      if (transactionResult.rows.length === 0) {
+        return fail(404, { error: 'Transaction not found' });
+      }
+
+      const isCurrentlyRecurrent = Boolean(
+        transactionResult.rows[0].is_recurrent
+      );
+      if (!isCurrentlyRecurrent) {
+        return fail(400, { error: 'Transaction is not recurrent' });
+      }
+
+      // Update transaction to remove recurrence
+      await turso.execute({
+        sql: 'UPDATE transactions SET is_recurrent = 0, recurrence_interval = NULL WHERE id = ?',
+        args: [transactionId],
+      });
+
+      // Also remove any existing recurrence adjustments for this transaction
+      await turso.execute({
+        sql: 'DELETE FROM recurrence_adjustments WHERE transaction_id = ?',
+        args: [transactionId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error removing recurrence:', error);
+      return fail(500, { error: 'Failed to remove recurrence' });
+    }
+  },
 };

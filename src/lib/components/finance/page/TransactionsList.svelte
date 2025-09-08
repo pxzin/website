@@ -171,22 +171,121 @@
                   </div>
                 {/if}
               </div>
-              <form
-                method="POST"
-                action="?/deleteTransaction"
-                use:enhance={deleteTransactionEnhance()}
-                class="inline"
-              >
-                <input
-                  type="hidden"
-                  name="transactionId"
-                  value={transaction.id}
-                />
-                <button
-                  type="submit"
-                  class="text-red-500 text-sm hover:underline">Delete</button
+
+              <!-- Action buttons -->
+              <div class="flex flex-col gap-1">
+                {#if !transaction.is_recurrent}
+                  <!-- Make Recurrent dropdown -->
+                  <details class="relative">
+                    <summary
+                      class="text-blue-500 text-sm hover:underline cursor-pointer list-none"
+                    >
+                      ➕ Recurrent
+                    </summary>
+                    <div
+                      class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10 min-w-[180px]"
+                    >
+                      <div class="space-y-2">
+                        <form
+                          method="POST"
+                          action="?/makeRecurrent"
+                          use:enhance={({ formData }) => {
+                            return async ({ result }: any) => {
+                              if (result.type === 'failure') {
+                                console.error(
+                                  'Failed to make recurrent:',
+                                  result.data?.error
+                                );
+                              } else if (result.type === 'success') {
+                                window.location.reload();
+                              }
+                            };
+                          }}
+                          class="space-y-2"
+                        >
+                          <input
+                            type="hidden"
+                            name="transactionId"
+                            value={transaction.id}
+                          />
+                          <div>
+                            <label
+                              class="block text-xs font-medium text-gray-700 mb-1"
+                            >
+                              Interval
+                            </label>
+                            <select
+                              name="recurrenceInterval"
+                              required
+                              class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select</option>
+                              <option value="monthly">Monthly</option>
+                              <option value="yearly">Yearly</option>
+                            </select>
+                          </div>
+                          <button
+                            type="submit"
+                            class="w-full bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700"
+                          >
+                            Make Recurrent
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </details>
+                {:else}
+                  <!-- Remove Recurrence -->
+                  <form
+                    method="POST"
+                    action="?/removeRecurrence"
+                    use:enhance={({ formData }) => {
+                      return async ({ result }: any) => {
+                        if (result.type === 'failure') {
+                          console.error(
+                            'Failed to remove recurrence:',
+                            result.data?.error
+                          );
+                        } else if (result.type === 'success') {
+                          window.location.reload();
+                        }
+                      };
+                    }}
+                    class="inline"
+                  >
+                    <input
+                      type="hidden"
+                      name="transactionId"
+                      value={transaction.id}
+                    />
+                    <button
+                      type="submit"
+                      class="text-purple-500 text-sm hover:underline"
+                    >
+                      ❌ Remove Recurrence
+                    </button>
+                  </form>
+                {/if}
+
+                <!-- Delete button -->
+                <form
+                  method="POST"
+                  action="?/deleteTransaction"
+                  use:enhance={deleteTransactionEnhance()}
+                  class="inline"
                 >
-              </form>
+                  <input
+                    type="hidden"
+                    name="transactionId"
+                    value={transaction.id}
+                  />
+                  <button
+                    type="submit"
+                    class="text-red-500 text-sm hover:underline"
+                    >🗑️ Delete</button
+                  >
+                </form>
+              </div>
             </div>
           </div>
         {/each}
@@ -296,22 +395,121 @@
                   </div>
                 {/if}
               </div>
-              <form
-                method="POST"
-                action="?/deleteTransaction"
-                use:enhance={deleteTransactionEnhance()}
-                class="inline"
-              >
-                <input
-                  type="hidden"
-                  name="transactionId"
-                  value={transaction.id}
-                />
-                <button
-                  type="submit"
-                  class="text-red-500 text-sm hover:underline">Delete</button
+
+              <!-- Action buttons -->
+              <div class="flex flex-col gap-1">
+                {#if !transaction.is_recurrent}
+                  <!-- Make Recurrent dropdown -->
+                  <details class="relative">
+                    <summary
+                      class="text-blue-500 text-sm hover:underline cursor-pointer list-none"
+                    >
+                      ➕ Recurrent
+                    </summary>
+                    <div
+                      class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-10 min-w-[180px]"
+                    >
+                      <div class="space-y-2">
+                        <form
+                          method="POST"
+                          action="?/makeRecurrent"
+                          use:enhance={({ formData }) => {
+                            return async ({ result }: any) => {
+                              if (result.type === 'failure') {
+                                console.error(
+                                  'Failed to make recurrent:',
+                                  result.data?.error
+                                );
+                              } else if (result.type === 'success') {
+                                window.location.reload();
+                              }
+                            };
+                          }}
+                          class="space-y-2"
+                        >
+                          <input
+                            type="hidden"
+                            name="transactionId"
+                            value={transaction.id}
+                          />
+                          <div>
+                            <label
+                              class="block text-xs font-medium text-gray-700 mb-1"
+                            >
+                              Interval
+                            </label>
+                            <select
+                              name="recurrenceInterval"
+                              required
+                              class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select</option>
+                              <option value="monthly">Monthly</option>
+                              <option value="yearly">Yearly</option>
+                            </select>
+                          </div>
+                          <button
+                            type="submit"
+                            class="w-full bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700"
+                          >
+                            Make Recurrent
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </details>
+                {:else}
+                  <!-- Remove Recurrence -->
+                  <form
+                    method="POST"
+                    action="?/removeRecurrence"
+                    use:enhance={({ formData }) => {
+                      return async ({ result }: any) => {
+                        if (result.type === 'failure') {
+                          console.error(
+                            'Failed to remove recurrence:',
+                            result.data?.error
+                          );
+                        } else if (result.type === 'success') {
+                          window.location.reload();
+                        }
+                      };
+                    }}
+                    class="inline"
+                  >
+                    <input
+                      type="hidden"
+                      name="transactionId"
+                      value={transaction.id}
+                    />
+                    <button
+                      type="submit"
+                      class="text-purple-500 text-sm hover:underline"
+                    >
+                      ❌ Remove Recurrence
+                    </button>
+                  </form>
+                {/if}
+
+                <!-- Delete button -->
+                <form
+                  method="POST"
+                  action="?/deleteTransaction"
+                  use:enhance={deleteTransactionEnhance()}
+                  class="inline"
                 >
-              </form>
+                  <input
+                    type="hidden"
+                    name="transactionId"
+                    value={transaction.id}
+                  />
+                  <button
+                    type="submit"
+                    class="text-red-500 text-sm hover:underline"
+                    >🗑️ Delete</button
+                  >
+                </form>
+              </div>
             </div>
           </div>
         {/each}
