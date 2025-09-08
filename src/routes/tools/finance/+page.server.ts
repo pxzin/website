@@ -218,9 +218,13 @@ export const actions = {
         });
       }
 
-      // If transaction is expense, make amount negative (unless it's already negative)
-      if (type === 'expense' && amount > 0) {
-        amount = -amount;
+      // Normalize amount based on type:
+      // - INCOME: always positive
+      // - EXPENSE: always negative
+      if (type === 'income') {
+        amount = Math.abs(amount); // Always positive for income
+      } else if (type === 'expense') {
+        amount = -Math.abs(amount); // Always negative for expense
       }
 
       const id = crypto.randomUUID();
@@ -518,9 +522,13 @@ export const actions = {
 
       const categoryId = categoryResult.rows[0].id as string;
 
-      // If transaction is expense, make amount negative (unless it's already negative)
-      if (type === 'expense' && amount > 0) {
-        amount = -amount;
+      // Normalize amount based on type:
+      // - INCOME: always positive
+      // - EXPENSE: always negative
+      if (type === 'income') {
+        amount = Math.abs(amount); // Always positive for income
+      } else if (type === 'expense') {
+        amount = -Math.abs(amount); // Always negative for expense
       }
 
       const id = crypto.randomUUID();
@@ -918,6 +926,47 @@ export const actions = {
     } catch (error) {
       console.error('Error processing transfer:', error);
       return fail(500, { error: 'Failed to process transfer' });
+    }
+  },
+
+  updateAccount: async ({ request }) => {
+    try {
+      const data = await request.formData();
+      const accountId = data.get('accountId') as string;
+      const name = data.get('name') as string;
+      const initialBalance = parseFloat(data.get('initialBalance') as string);
+
+      if (!accountId || !name || isNaN(initialBalance)) {
+        return fail(400, { error: 'All fields are required' });
+      }
+
+      // Get current account data
+      const accountResult = await turso.execute({
+        sql: 'SELECT initial_balance, current_balance FROM accounts WHERE id = ?',
+        args: [accountId],
+      });
+
+      if (accountResult.rows.length === 0) {
+        return fail(404, { error: 'Account not found' });
+      }
+
+      const currentInitialBalance = accountResult.rows[0]
+        .initial_balance as number;
+      const currentBalance = accountResult.rows[0].current_balance as number;
+
+      // Calculate the difference between old and new initial balance
+      const balanceDifference = initialBalance - currentInitialBalance;
+
+      // Update both name, initial balance and adjust current balance by the difference
+      await turso.execute({
+        sql: 'UPDATE accounts SET name = ?, initial_balance = ?, current_balance = current_balance + ? WHERE id = ?',
+        args: [name, initialBalance, balanceDifference, accountId],
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating account:', error);
+      return fail(500, { error: 'Failed to update account' });
     }
   },
 };

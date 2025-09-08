@@ -117,20 +117,17 @@ export const actions: Actions = {
           const transactionId = crypto.randomUUID();
 
           // Handle amount based on import type and transaction type
+          // Normalize transaction amounts based on type:
+          // - INCOME: always positive
+          // - EXPENSE: always negative
           let finalAmount: number;
 
-          if (importType === 'credit_card_bill') {
-            // For credit card bills: positive amounts are expenses (keep positive for expenses, negative for payments)
-            finalAmount =
-              transaction.type === 'expense'
-                ? Math.abs(transaction.amount)
-                : -Math.abs(transaction.amount);
+          if (transaction.type === 'income') {
+            finalAmount = Math.abs(transaction.amount); // Always positive for income
+          } else if (transaction.type === 'expense') {
+            finalAmount = -Math.abs(transaction.amount); // Always negative for expense
           } else {
-            // For bank statements: positive amounts are income, negative are expenses
-            finalAmount =
-              transaction.type === 'income'
-                ? Math.abs(transaction.amount)
-                : -Math.abs(transaction.amount);
+            throw new Error(`Invalid transaction type: ${transaction.type}`);
           }
 
           await turso.execute({
