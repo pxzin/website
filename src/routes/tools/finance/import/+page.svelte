@@ -3,6 +3,7 @@
   import { showSuccess, showError } from '$lib/stores/toast';
   import CategoryForm from '$lib/components/finance/CategoryForm.svelte';
   import type { PageData } from './$types';
+  import { onDestroy } from 'svelte';
 
   export let data: PageData;
 
@@ -19,6 +20,278 @@
 
   // Local categories list (updated when new categories are created)
   let categories = data.categories;
+
+  // Computed sorted categories for better UX
+  $: sortedCategories = categories
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+  // Custom select state for each transaction - simplified for better reactivity
+  let selectStates: {
+    [key: number]: {
+      isOpen: boolean;
+      searchTerm: string;
+      selectedIndex: number;
+    };
+  } = {};
+
+  // Separate reactive variables for better tracking
+  let selectedIndexes: { [key: number]: number } = {};
+  let openDropdowns: { [key: number]: boolean } = {};
+  let searchTerms: { [key: number]: string } = {};
+
+  // Force reactivity trigger
+  let reactivityTrigger = 0;
+
+  // Debounce timers for search
+  let searchDebounceTimers: { [key: number]: NodeJS.Timeout } = {};
+
+  function initSelectState(index: number) {
+    if (!selectStates[index]) {
+      selectStates[index] = {
+        isOpen: false,
+        searchTerm: '',
+        selectedIndex: -1,
+      };
+      selectedIndexes[index] = -1;
+      openDropdowns[index] = false;
+      searchTerms[index] = '';
+    }
+  }
+
+  function toggleSelect(index: number) {
+    initSelectState(index);
+    const isOpening = !selectStates[index].isOpen;
+
+    selectStates[index].isOpen = isOpening;
+    selectStates[index].searchTerm = '';
+
+    // Update reactive variables
+    openDropdowns[index] = isOpening;
+    searchTerms[index] = '';
+
+    // Clear cache when opening/closing dropdown
+    filteredCategoriesCache = {};
+
+    // Close other selects
+    Object.keys(selectStates).forEach((key) => {
+      const keyNum = parseInt(key);
+      if (keyNum !== index) {
+        selectStates[keyNum].isOpen = false;
+        openDropdowns[keyNum] = false;
+      }
+    });
+
+    // Set initial selection to first item when opening
+    if (isOpening) {
+      const filteredCategories = getFilteredCategories(index);
+      const newSelectedIndex = filteredCategories.length > 0 ? 0 : -1;
+      selectStates[index].selectedIndex = newSelectedIndex;
+      selectedIndexes[index] = newSelectedIndex;
+    } else {
+      selectStates[index].selectedIndex = -1;
+      selectedIndexes[index] = -1;
+    }
+
+    selectStates = { ...selectStates }; // Force reactivity
+    selectedIndexes = { ...selectedIndexes }; // Force reactivity
+    reactivityTrigger++; // Additional trigger
+
+    // Focus search input when opening
+    if (isOpening) {
+      setTimeout(() => {
+        const searchInput = document.querySelector(
+          `[data-search-input="${index}"]`
+        ) as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }, 10);
+    }
+  }
+
+  function selectCategory(transactionIndex: number, categoryId: string) {
+    parsedData[transactionIndex].category_id = categoryId;
+    selectStates[transactionIndex].isOpen = false;
+    selectStates[transactionIndex].searchTerm = '';
+    selectStates = { ...selectStates }; // Force reactivity
+  }
+
+  // Cache for filtered categories
+  let filteredCategoriesCache: { [key: string]: any[] } = {};
+
+  function getFilteredCategories(index: number) {
+    initSelectState(index);
+    const searchTerm = selectStates[index].searchTerm.toLowerCase();
+    const cacheKey = `${index}-${searchTerm}`;
+
+    // Return cached result if available
+    if (filteredCategoriesCache[cacheKey]) {
+      return filteredCategoriesCache[cacheKey];
+    }
+
+    const filtered = sortedCategories.filter((category) =>
+      category.name.toLowerCase().includes(searchTerm)
+    );
+
+    // Cache the result
+    filteredCategoriesCache[cacheKey] = filtered;
+
+    return filtered;
+  }
+
+  function handleSelectKeydown(event: KeyboardEvent, index: number) {
+    initSelectState(index);
+    const filteredCategories = getFilteredCategories(index);
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      selectStates[index].isOpen = false;
+      selectStates = { ...selectStates }; // Force reactivity
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (
+        selectStates[index].selectedIndex >= 0 &&
+        filteredCategories[selectStates[index].selectedIndex]
+      ) {
+        const selectedCategory =
+          filteredCategories[selectStates[index].selectedIndex];
+        selectCategory(index, selectedCategory.id);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      const filteredCategories = getFilteredCategories(index);
+      let newIndex;
+      if (selectStates[index].selectedIndex < filteredCategories.length - 1) {
+        newIndex = selectStates[index].selectedIndex + 1;
+      } else {
+        newIndex = 0; // Loop to first
+      }
+
+      selectStates[index].selectedIndex = newIndex;
+      selectedIndexes[index] = newIndex;
+
+      selectStates = { ...selectStates }; // Force reactivity
+      selectedIndexes = { ...selectedIndexes }; // Force reactivity
+      reactivityTrigger++; // Additional trigger
+      scrollToSelectedItem(index);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      const filteredCategories = getFilteredCategories(index);
+      let newIndex;
+      if (selectStates[index].selectedIndex > 0) {
+        newIndex = selectStates[index].selectedIndex - 1;
+      } else {
+        newIndex = filteredCategories.length - 1; // Loop to last
+      }
+
+      selectStates[index].selectedIndex = newIndex;
+      selectedIndexes[index] = newIndex;
+
+      selectStates = { ...selectStates }; // Force reactivity
+      selectedIndexes = { ...selectedIndexes }; // Force reactivity
+      reactivityTrigger++; // Additional trigger
+      scrollToSelectedItem(index);
+      return;
+    }
+  }
+
+  // Handle letter navigation on the main button
+  function handleButtonKeydown(event: KeyboardEvent, index: number) {
+    // Handle letter navigation when dropdown is closed
+    if (
+      !selectStates[index]?.isOpen &&
+      event.key.length === 1 &&
+      event.key.match(/[a-zA-ZáàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ]/)
+    ) {
+      event.preventDefault();
+      const letter = event.key.toLowerCase();
+      const matchingCategory = sortedCategories.find((category) =>
+        category.name.toLowerCase().startsWith(letter)
+      );
+      if (matchingCategory) {
+        selectCategory(index, matchingCategory.id);
+      }
+    }
+  }
+
+  function handleSearchInput(event: Event, index: number) {
+    const target = event.target as HTMLInputElement;
+
+    // Clear previous debounce timer
+    if (searchDebounceTimers[index]) {
+      clearTimeout(searchDebounceTimers[index]);
+    }
+
+    // Update search term immediately for UI responsiveness
+    selectStates[index].searchTerm = target.value;
+    searchTerms[index] = target.value;
+
+    // Clear cache when search term changes
+    filteredCategoriesCache = {};
+
+    selectStates = { ...selectStates };
+    searchTerms = { ...searchTerms };
+
+    // Debounce the selection update
+    searchDebounceTimers[index] = setTimeout(() => {
+      const filteredCategories = getFilteredCategories(index);
+      const newSelectedIndex = filteredCategories.length > 0 ? 0 : -1;
+
+      selectStates[index].selectedIndex = newSelectedIndex;
+      selectedIndexes[index] = newSelectedIndex;
+
+      selectStates = { ...selectStates }; // Force reactivity
+      selectedIndexes = { ...selectedIndexes }; // Force reactivity
+      reactivityTrigger++; // Additional trigger
+    }, 150); // 150ms debounce
+  }
+
+  function getCategoryById(id: string) {
+    return categories.find((cat) => cat.id === id);
+  }
+
+  // Reactive function to check if item is selected
+  function isItemSelected(transactionIndex: number, categoryIndex: number) {
+    // Use the separate reactive variable instead of nested object
+    return selectedIndexes[transactionIndex] === categoryIndex;
+  }
+
+  function scrollToSelectedItem(index: number) {
+    setTimeout(() => {
+      const dropdown = document.querySelector(`[data-dropdown="${index}"]`);
+      const selectedItem = dropdown?.querySelector('.bg-blue-100');
+      if (selectedItem && dropdown) {
+        selectedItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }, 10);
+  }
+
+  // Cleanup on component destroy
+  onDestroy(() => {
+    Object.values(searchDebounceTimers).forEach((timer) => clearTimeout(timer));
+  });
+
+  // Close dropdowns when clicking outside
+  function handleGlobalClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    // Check if click is outside any category select dropdown
+    if (!target.closest('.category-select-container')) {
+      Object.keys(selectStates).forEach((key) => {
+        selectStates[parseInt(key)].isOpen = false;
+      });
+      selectStates = { ...selectStates }; // Force reactivity
+    }
+  }
 
   interface ImportTransaction {
     date: string;
@@ -53,6 +326,24 @@
       installments_paid: null,
       installments_total: null,
     };
+  }
+
+  // Calculate the correct amount for transactions
+  function calculateTransactionAmount(csvAmount: number, installmentInfo: any) {
+    if (installmentInfo.is_installment && installmentInfo.installments_total) {
+      // CSV amount is per installment, so multiply by total to get the full amount
+      return csvAmount * installmentInfo.installments_total;
+    }
+    // For non-installment transactions, use the CSV amount as-is
+    return csvAmount;
+  }
+
+  // Get installment amount (what was in the CSV)
+  function getInstallmentAmount(transaction: any) {
+    if (transaction.installments_total) {
+      return transaction.amount / transaction.installments_total;
+    }
+    return transaction.amount;
   }
 
   function openCategoryForm(transactionIndex: number) {
@@ -102,23 +393,29 @@
       const dataLines = lines.slice(1);
       parsedData = dataLines.map((line) => {
         const [date, title, amountStr] = line.split(',');
-        const amount = parseFloat(amountStr);
+        const csvAmount = parseFloat(amountStr); // This is the per-installment amount from CSV
         const installmentInfo = detectInstallment(title);
 
-        // Determine transaction type based on import type and amount
+        // Calculate the total transaction amount
+        const totalAmount = calculateTransactionAmount(
+          csvAmount,
+          installmentInfo
+        );
+
+        // Determine transaction type based on import type and total amount
         let transactionType: 'income' | 'expense';
         if (importType === 'credit_card_bill') {
           // For credit card bills: positive = expense, negative = credit/payment
-          transactionType = amount > 0 ? 'expense' : 'income';
+          transactionType = totalAmount > 0 ? 'expense' : 'income';
         } else {
           // For bank statements: positive = income, negative = expense
-          transactionType = amount >= 0 ? 'income' : 'expense';
+          transactionType = totalAmount >= 0 ? 'income' : 'expense';
         }
 
         return {
           date: date.trim(),
           title: title.trim(),
-          amount,
+          amount: totalAmount, // Use the calculated total amount
           selected: true, // Default to selected
           category_id: '', // User will select
           is_recurrent: false,
@@ -225,6 +522,8 @@
 <svelte:head>
   <title>Importar CSV - Fintrack</title>
 </svelte:head>
+
+<svelte:window on:click={handleGlobalClick} />
 
 <div class="min-h-screen bg-gray-50 py-8">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -459,6 +758,13 @@
                       >
                         R$ {Math.abs(transaction.amount).toFixed(2)}
                       </span>
+                      {#if transaction.installments_total}
+                        <span class="text-xs text-gray-500">
+                          Total: R$ {Math.abs(
+                            getInstallmentAmount(transaction)
+                          ).toFixed(2)} × {transaction.installments_total}
+                        </span>
+                      {/if}
                       <span class="text-xs text-gray-500">
                         {transaction.type === 'income'
                           ? '📈 Receita'
@@ -468,19 +774,101 @@
                   </td>
                   <td class="px-3 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
-                      <select
-                        bind:value={transaction.category_id}
-                        disabled={!transaction.selected}
-                        class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 flex-1"
-                      >
-                        <option value="">Selecionar categoria</option>
-                        {#each categories as category}
-                          <option value={category.id}>
-                            {category.icon || '📁'}
-                            {category.name}
-                          </option>
-                        {/each}
-                      </select>
+                      <!-- Custom Select Component -->
+                      <div class="relative flex-1 category-select-container">
+                        <!-- Current Value Display -->
+                        <button
+                          type="button"
+                          disabled={!transaction.selected}
+                          on:click={() => toggleSelect(index)}
+                          on:keydown={(e) => handleButtonKeydown(e, index)}
+                          class="w-full text-left text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 bg-white flex items-center justify-between"
+                        >
+                          <span class="truncate">
+                            {#if transaction.category_id}
+                              {@const selectedCategory = getCategoryById(
+                                transaction.category_id
+                              )}
+                              {selectedCategory?.icon || '📁'}
+                              {selectedCategory?.name ||
+                                'Categoria não encontrada'}
+                            {:else}
+                              <span class="text-gray-500"
+                                >Selecionar categoria</span
+                              >
+                            {/if}
+                          </span>
+                          <svg
+                            class="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M19 9l-7 7-7-7"
+                            ></path>
+                          </svg>
+                        </button>
+
+                        <!-- Dropdown -->
+                        {#if selectStates[index]?.isOpen}
+                          <div
+                            class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden"
+                          >
+                            <!-- Search Input -->
+                            <div class="p-2 border-b border-gray-200">
+                              <input
+                                type="text"
+                                placeholder="Pesquisar categorias..."
+                                value={selectStates[index]?.searchTerm || ''}
+                                on:input={(e) => handleSearchInput(e, index)}
+                                on:keydown={(e) =>
+                                  handleSelectKeydown(e, index)}
+                                data-search-input={index}
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <div class="text-xs text-gray-500 mt-1">
+                                Digite para pesquisar • Use ↑↓ para navegar •
+                                Enter para selecionar • Esc para fechar
+                              </div>
+                            </div>
+
+                            <!-- Options List -->
+                            <div
+                              class="overflow-y-auto max-h-40"
+                              data-dropdown={index}
+                            >
+                              {#each getFilteredCategories(index) as category, categoryIndex (category.id + '-' + searchTerms[index] + '-' + selectedIndexes[index])}
+                                {@const isSelected = isItemSelected(
+                                  index,
+                                  categoryIndex
+                                )}
+                                <button
+                                  type="button"
+                                  on:click={() =>
+                                    selectCategory(index, category.id)}
+                                  class="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center gap-2 {isSelected
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : ''}"
+                                >
+                                  <span>{category.icon || '📁'}</span>
+                                  <span class="truncate">{category.name}</span>
+                                </button>
+                              {:else}
+                                <div
+                                  class="px-3 py-2 text-sm text-gray-500 text-center"
+                                >
+                                  Nenhuma categoria encontrada
+                                </div>
+                              {/each}
+                            </div>
+                          </div>
+                        {/if}
+                      </div>
+
                       <button
                         type="button"
                         disabled={!transaction.selected}
@@ -588,7 +976,7 @@
             <ul class="list-disc list-inside space-y-1">
               <li>
                 Transações com padrão "N/N" serão automaticamente identificadas
-                como parceladas
+                como parceladas e o valor total será calculado corretamente
               </li>
               <li>
                 <strong>Extrato bancário:</strong> valores positivos = receitas,
@@ -606,6 +994,11 @@
               <li>
                 <strong>💡 Novo:</strong> Clique no botão "+" para criar novas categorias
                 sem sair da importação
+              </li>
+              <li>
+                <strong>🔍 Categorias:</strong> Clique no seletor para pesquisar
+                ou pressione uma letra para ir direto à primeira categoria com essa
+                letra
               </li>
               <li>
                 Transações parceladas não podem ser marcadas como recorrentes
