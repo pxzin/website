@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.0.6 - 2025-09-10
+
+### Added
+- **Módulo Financeiro (FinTrack):**
+  - Funcionalidade de transferência de valores entre contas.
+  - Suporte para transações recorrentes e opção para interromper a recorrência.
+  - Ferramenta para importação de transações a partir de arquivos CSV.
+  - Gerenciamento de Contas e Categorias (criar/editar) com seleção de ícones.
+  - Novas seções para visualizar "Recorrências Ativas" e "Parcelas Ativas".
+  - Componentes de insights financeiros e cálculos mensais.
+  - Atalhos de teclado para acelerar a criação de transações e categorias.
+- **Novas Ferramentas:**
+  - Adicionada a ferramenta "Trim Transparency" para remover o fundo transparente de imagens.
+
+### Changed
+- Melhoria geral na interface e experiência de usuário do módulo financeiro, com novos componentes de resumo, cabeçalhos e listas de transações.
+- Aprimoramento nos formulários de transação, conta e categoria, que agora utilizam modais e oferecem busca para facilitar a seleção.
+
+### Refactored
+- Arquitetura interna dos tipos de transação para otimizar o modelo de dados e a performance das consultas.
+- Diversos componentes (`AccountForm`, `CategoryForm`, `TransactionForm`) foram refatorados para aumentar a reusabilidade e manutenibilidade.
+- Reorganização da página principal do módulo financeiro para uma estrutura mais limpa e baseada em componentes.
+
 ## 0.0.5 - 2025-09-02
 
 ### Changed
