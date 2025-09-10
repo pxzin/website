@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.7 - 2025-09-10
+
+### Added
+- **Novas Ferramentas:**
+  - Adicionada a ferramenta "Compressor de Vídeo" para reduzir o tamanho de arquivos de vídeo para um alvo específico (~171MB), utilizando `ffmpeg` no servidor.
+
 ## 0.0.6 - 2025-09-10
 
 ### Added
