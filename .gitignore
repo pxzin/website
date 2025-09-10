@@ -11,6 +11,7 @@ node_modules
 # Development logs
 /logs
 *.log
+ffmpeg2pass-*.log*
 
 # Local database
 local.db
