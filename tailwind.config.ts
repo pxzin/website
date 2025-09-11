@@ -1,19 +1,22 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss';
 
 export default {
-  content: ["./src/**/*.{html,js,svelte,ts}"],
-
-  import type { Config } from "tailwindcss";
-
-export default {
-  content: ["./src/**/*.{html,js,svelte,ts}"],
+  content: ['./src/**/*.{html,js,svelte,ts}'],
 
   theme: {
-    extend: {}
+    extend: {},
   },
 
-  plugins: [require("@tailwindcss/typography")]
-} as Config;
+  plugins: [require('@tailwindcss/typography'), require('daisyui')],
 
-  plugins: [require("@tailwindcss/typography")]
+  daisyui: {
+    themes: ['light', 'dark', 'cupcake'],
+    darkTheme: 'dark',
+    base: true,
+    styled: true,
+    utils: true,
+    prefix: '',
+    logs: true,
+    themeRoot: ':root',
+  },
 } as Config;
