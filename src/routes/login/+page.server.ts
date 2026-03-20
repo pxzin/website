@@ -1,4 +1,4 @@
-import { TODO_PASSWORD } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { fail, redirect } from '@sveltejs/kit';
 
 export const actions = {
@@ -6,7 +6,7 @@ export const actions = {
 		const data = await request.formData();
 		const password = data.get('password');
 
-		if (password !== TODO_PASSWORD) {
+		if (password !== env.TODO_PASSWORD) {
 			return fail(401, { error: 'Invalid password. Please try again.' });
 		}
 
