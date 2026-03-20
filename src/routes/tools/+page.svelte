@@ -69,6 +69,23 @@
           Compress videos to a specific size for easy sharing.
         </p>
       </a>
+
+      <a
+        href="/tools/ip"
+        class="bg-[var(--color-neutral-50)] p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+      >
+        <div class="flex items-center justify-center mb-4">
+          <div class="text-6xl">🌐</div>
+        </div>
+        <h2
+          class="text-2xl font-semibold text-[var(--color-primary-default)] mb-2 text-center"
+        >
+          My IP Address
+        </h2>
+        <p class="text-[var(--color-neutral-700)] text-center">
+          Quickly check your public IP address with no ads or tracking.
+        </p>
+      </a>
     </div>
   </div>
 </section>
